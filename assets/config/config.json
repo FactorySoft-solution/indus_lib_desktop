@@ -1,0 +1,21 @@
+{
+    "dev": {
+      "appName": "code_g (Dev)",
+      "apiBaseUrl": "https://dev-api.yourapp.com",
+      "debugMode": true,
+      "appVersion": "1.0.0-dev"
+    },
+    "staging": {
+      "appName": "code_g (Staging)",
+      "apiBaseUrl": "https://staging-api.yourapp.com",
+      "debugMode": true,
+      "appVersion": "1.0.0-staging"
+    },
+    "prod": {
+      "appName": "code_g",
+      "apiBaseUrl": "https://api.yourapp.com",
+      "debugMode": false,
+      "appVersion": "1.0.0"
+    }
+  }
+  
