@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:code_g/app/core/values/app_colors.dart';
 import 'package:code_g/app/core/values/app_text_styles.dart';
+import 'package:code_g/app/widgets/file_picker_button.dart';
 // import 'package:code_g/app/core/services/local_storage_service.dart';
 
 import 'package:get/get.dart';
@@ -40,9 +41,9 @@ class HomeView extends GetView<HomeController> {
           children: [
             ElevatedButton(
               onPressed: () {
-                // Action for button 1
+                Get.toNamed("/home/CreateProject");
               },
-              child: const Text('Button 1', style: AppTextStyles.button),
+              child: const Text('create project', style: AppTextStyles.button),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
@@ -64,6 +65,7 @@ class HomeView extends GetView<HomeController> {
                 style: AppTextStyles.button,
               ),
             ),
+            FilePickerButton(buttonText: "file picker"),
           ],
         ),
       ),
