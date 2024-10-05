@@ -1,5 +1,7 @@
 import 'package:code_g/app/modules/home/bindings/home_binding.dart';
 import 'package:code_g/app/modules/home/views/home_view.dart';
+import 'package:code_g/app/modules/create_project/views/create_project_view.dart';
+import 'package:code_g/app/modules/create_project/bindings/create_project_binding.dart';
 import 'package:get/get.dart';
 // import 'package:code_g/app/modules/profile/profile_binding.dart';
 // import 'package:code_g/app/modules/profile/profile_view.dart';
@@ -19,11 +21,11 @@ class AppPages {
       page: () => const HomeView(),
       binding: HomeBinding(),
       children: [
-        // GetPage(
-        //   name: _Paths.PROFILE,
-        //   page: () => ProfileView(),
-        //   binding: ProfileBinding(),
-        // ),
+        GetPage(
+          name: _Paths.CREATEPROJECT,
+          page: () => const CreateProjectView(),
+          binding: CreateProjectBinding(),
+        ),
         // GetPage(
         //   name: _Paths.SETTINGS,
         //   page: () => SettingsView(),
