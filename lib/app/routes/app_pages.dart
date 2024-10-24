@@ -20,25 +20,18 @@ class AppPages {
       name: _Paths.HOME,
       page: () => const HomeView(),
       binding: HomeBinding(),
-      children: [
-        GetPage(
-          name: _Paths.CREATEPROJECT,
-          page: () => const CreateProjectView(),
-          binding: CreateProjectBinding(),
-        ),
-        // GetPage(
-        //   name: _Paths.SETTINGS,
-        //   page: () => SettingsView(),
-        //   binding: SettingsBinding(),
-        //   children: [
-        //     GetPage(
-        //       name: _Paths.SETTINGS_DETAIL,
-        //       page: () => SettingsDetailView(),
-        //       binding: SettingsDetailBinding(),
-        //     ),
-        //   ],
-        // ),
-      ],
+      // children: [
+      //   GetPage(
+      //     name: _Paths.CREATEPROJECT,
+      //     page: () => CreateProjectView(),
+      //     binding: CreateProjectBinding(),
+      //   ),
+      // ],
     ),
+    GetPage(
+      name: _Paths.CREATEPROJECT,
+      page: () => CreateProjectView(),
+      binding: CreateProjectBinding(),
+    )
   ];
 }

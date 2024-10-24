@@ -7,6 +7,8 @@ import 'package:code_g/app/widgets/file_picker_button.dart';
 import 'package:get/get.dart';
 
 import '../controllers/home_controller.dart';
+// import 'package:code_g/app/routes/app_routes.dart';
+import 'package:code_g/app/routes/app_pages.dart'; // Main file
 
 class HomeView extends GetView<HomeController> {
   // final LocalStorageService _localStorageService = LocalStorageService();
@@ -41,7 +43,7 @@ class HomeView extends GetView<HomeController> {
           children: [
             ElevatedButton(
               onPressed: () {
-                Get.toNamed("/home/CreateProject");
+                Get.toNamed(Routes.CREATEPROJECT);
               },
               child: const Text('create project', style: AppTextStyles.button),
             ),
@@ -65,7 +67,10 @@ class HomeView extends GetView<HomeController> {
                 style: AppTextStyles.button,
               ),
             ),
-            FilePickerButton(buttonText: "file picker"),
+            FilePickerButton(
+              buttonText: "file picker",
+              onPick: () {},
+            ),
           ],
         ),
       ),

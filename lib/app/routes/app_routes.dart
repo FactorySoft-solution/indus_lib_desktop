@@ -12,7 +12,7 @@ abstract class Routes {
 abstract class _Paths {
   _Paths._();
   static const HOME = '/home';
-  static const CREATEPROJECT = '/home/CreateProject';
+  static const CREATEPROJECT = '/CreateProject';
   static const SETTINGS = '/home/settings';
   static const SETTINGS_DETAIL = '/home/settings/detail';
 }
