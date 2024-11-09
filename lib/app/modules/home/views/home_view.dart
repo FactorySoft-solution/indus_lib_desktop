@@ -38,42 +38,43 @@ class HomeView extends GetView<HomeController> {
         centerTitle: true,
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ElevatedButton(
-              onPressed: () {
-                Get.toNamed(Routes.CREATEPROJECT);
-              },
-              child: const Text('create project', style: AppTextStyles.button),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                // Action for button 2
-              },
-              child: const Text(
-                'Button 2',
-                style: AppTextStyles.button,
-              ),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                // Action for button 3
-              },
-              child: const Text(
-                'Button 3',
-                style: AppTextStyles.button,
-              ),
-            ),
-            FilePickerButton(
-              buttonText: "file picker",
-              onPick: () {},
-            ),
-          ],
-        ),
-      ),
+          // child: Column(
+          //   mainAxisAlignment: MainAxisAlignment.center,
+          //   children: [
+          //     ElevatedButton(
+          //       onPressed: () {
+          //         Get.toNamed(Routes.CREATEPROJECT);
+          //       },
+          //       child: const Text('create project', style: AppTextStyles.button),
+          //     ),
+          //     const SizedBox(height: 20),
+          //     ElevatedButton(
+          //       onPressed: () {
+          //         // Action for button 2
+          //       },
+          //       child: const Text(
+          //         'Button 2',
+          //         style: AppTextStyles.button,
+          //       ),
+          //     ),
+          //     const SizedBox(height: 20),
+          //     ElevatedButton(
+          //       onPressed: () {
+          //         // Action for button 3
+          //       },
+          //       child: const Text(
+          //         'Button 3',
+          //         style: AppTextStyles.button,
+          //       ),
+          //     ),
+          //     FilePickerButton(
+          //       buttonText: "file picker",
+          //       onPick: () {},
+          //     ),
+          //   ],
+          // ),
+
+          ),
     );
   }
 }

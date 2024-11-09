@@ -2,6 +2,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class LocalStorageService {
   // Save a string value
+  Future<void> saveFirstTime(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('first_time', value);
+  }
+
+  Future<bool> getFirstTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('first_time') ?? false;
+  }
+
+  // Save a string value
   Future<void> saveString(String key, String value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(key, value);

@@ -3,16 +3,20 @@ part of 'app_pages.dart';
 
 abstract class Routes {
   Routes._();
+  static const SPLASH = _Paths.SPLASH;
+  static const AUTH = _Paths.AUTH;
   static const HOME = _Paths.HOME;
   static const CREATEPROJECT = _Paths.CREATEPROJECT;
-  static const SETTINGS = _Paths.SETTINGS;
-  static const SETTINGS_DETAIL = _Paths.SETTINGS_DETAIL;
+  // static const SETTINGS = _Paths.SETTINGS;
+  // static const SETTINGS_DETAIL = _Paths.SETTINGS_DETAIL;
 }
 
 abstract class _Paths {
   _Paths._();
+  static const SPLASH = '/SplachScreen';
+  static const AUTH = '/AuthPage';
   static const HOME = '/home';
   static const CREATEPROJECT = '/CreateProject';
-  static const SETTINGS = '/home/settings';
-  static const SETTINGS_DETAIL = '/home/settings/detail';
+  // static const SETTINGS = '/home/settings';
+  // static const SETTINGS_DETAIL = '/home/settings/detail';
 }
