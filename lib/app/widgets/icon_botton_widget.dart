@@ -15,15 +15,6 @@ class IconButtonWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // return GestureDetector(
-
-    //   onTap: onPressed,
-    //   child: Image.asset(
-    //     imagePath, // Use the passed image path
-    //     height: size, // Set size dynamically
-    //     width: size, // Set size dynamically
-    //   ),
-    // );
     return Material(
       color: backgroundColor, // Set background color dynamically
       shape: const CircleBorder(),
