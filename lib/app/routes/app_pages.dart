@@ -1,10 +1,14 @@
-import 'package:code_g/app/modules/home/bindings/home_binding.dart';
-import 'package:code_g/app/modules/home/views/home_view.dart';
-import 'package:code_g/app/modules/create_project/views/create_project_view.dart';
-import 'package:code_g/app/modules/create_project/bindings/create_project_binding.dart';
-import 'package:code_g/app/views/spalsh_screen/auth_page.dart';
-import 'package:code_g/app/views/spalsh_screen/splash_screen.dart';
 import 'package:get/get.dart';
+
+import '../modules/auth/bindings/auth_binding.dart';
+import '../modules/auth/views/auth_page.dart';
+import '../modules/auth/views/auth_view.dart';
+import '../modules/auth/views/splash_screen.dart';
+import '../modules/create_project/bindings/create_project_binding.dart';
+import '../modules/create_project/views/create_project_view.dart';
+import '../modules/home/bindings/home_binding.dart';
+import '../modules/home/views/home_view.dart';
+
 // import 'package:code_g/app/modules/profile/profile_binding.dart';
 // import 'package:code_g/app/modules/profile/profile_view.dart';
 // import 'package:code_g/app/modules/settings/settings_binding.dart';
@@ -38,10 +42,10 @@ class AppPages {
       page: () => const HomeView(),
       binding: HomeBinding(),
     ),
-    // GetPage(
-    //   name: _Paths.CREATEPROJECT,
-    //   page: () => CreateProjectView(),
-    //   binding: CreateProjectBinding(),
-    // )
+    GetPage(
+      name: _Paths.LOGIN,
+      page: () => AuthView(),
+      binding: AuthBinding(),
+    ),
   ];
 }

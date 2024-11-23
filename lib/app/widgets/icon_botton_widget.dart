@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class IconButtonWidget extends StatelessWidget {
   final VoidCallback onPressed; // The callback function to be triggered on tap
@@ -13,19 +14,28 @@ class IconButtonWidget extends StatelessWidget {
     this.backgroundColor = Colors.transparent, // Default size of the button
   });
 
+  Widget imageWidget(String imagePath) {
+    String extonsion = imagePath.split('.').last;
+    if (extonsion == 'svg') {
+      return SvgPicture.asset(
+        imagePath,
+        placeholderBuilder: (context) => CircularProgressIndicator(),
+      );
+    } else {
+      return Image.asset(
+        imagePath,
+        height: size, // Set size dynamically
+        width: size, // Set size dynamically), // Button icon
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Material(
       color: backgroundColor, // Set background color dynamically
       shape: const CircleBorder(),
-      child: InkWell(
-        onTap: onPressed,
-        child: Image.asset(
-          imagePath,
-          height: size, // Set size dynamically
-          width: size, // Set size dynamically), // Button icon
-        ),
-      ),
+      child: InkWell(onTap: onPressed, child: imageWidget(imagePath)),
     );
   }
 }

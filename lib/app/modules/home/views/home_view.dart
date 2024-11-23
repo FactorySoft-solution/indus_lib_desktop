@@ -1,14 +1,11 @@
-import 'package:flutter/material.dart';
 import 'package:code_g/app/core/values/app_colors.dart';
 import 'package:code_g/app/core/values/app_text_styles.dart';
-import 'package:code_g/app/widgets/file_picker_button.dart';
+import 'package:flutter/material.dart';
 // import 'package:code_g/app/core/services/local_storage_service.dart';
 
 import 'package:get/get.dart';
 
 import '../controllers/home_controller.dart';
-// import 'package:code_g/app/routes/app_routes.dart';
-import 'package:code_g/app/routes/app_pages.dart'; // Main file
 
 class HomeView extends GetView<HomeController> {
   // final LocalStorageService _localStorageService = LocalStorageService();
@@ -37,7 +34,7 @@ class HomeView extends GetView<HomeController> {
         ),
         centerTitle: true,
       ),
-      body: Center(
+      body: const Center(
           // child: Column(
           //   mainAxisAlignment: MainAxisAlignment.center,
           //   children: [

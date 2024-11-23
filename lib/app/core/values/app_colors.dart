@@ -10,6 +10,8 @@ class AppColors {
   static const Color backgroundColor = Color(0xFF97D9B5);
   static const Color purpleColor = Color(0xFF7525F5);
   static const Color orangeColor = Color(0xFFF09D38);
+  static const Color darkGray = Color(0xFF999999);
+  static const Color shadowBlack20 = Color(0x33000000);
 
   ///#97D9B5
   // Add more as needed

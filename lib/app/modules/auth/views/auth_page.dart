@@ -5,7 +5,7 @@ import 'package:code_g/app/routes/app_pages.dart';
 import 'package:code_g/app/widgets/button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-// import 'package:get/get.dart';
+import 'package:get/get.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -20,7 +20,7 @@ class _AuthPageState extends State<AuthPage> {
     super.initState();
     Timer(const Duration(seconds: 5), () {
       // Get.to(HomeView());
-      print(Routes.HOME);
+      // print(Routes.HOME);
       // Get.offAllNamed(Routes.CREATEPROJECT);
     });
   }
@@ -66,11 +66,11 @@ class _authCardState extends State<authCard> {
   @override
   Widget build(BuildContext context) {
     toUserLogin() {
-      print("to user login");
+      Get.toNamed(Routes.LOGIN, arguments: {"role": "user"});
     }
 
     toAdminLogin() {
-      print("to admin login");
+      Get.toNamed(Routes.LOGIN, arguments: {"role": "admin"});
     }
 
     return Container(

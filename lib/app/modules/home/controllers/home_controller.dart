@@ -1,5 +1,4 @@
 import 'package:get/get.dart';
-import 'package:code_g/app/core/services/api_service.dart';
 
 class HomeController extends GetxController {
   // final ApiService apiService;
