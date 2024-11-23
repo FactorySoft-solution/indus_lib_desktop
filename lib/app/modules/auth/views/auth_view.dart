@@ -8,14 +8,11 @@ import 'package:code_g/app/widgets/password_input_widget.dart';
 import 'package:code_g/app/widgets/text_input_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:gsform/gs_form/widget/form.dart';
 
 import '../controllers/auth_controller.dart';
 
 class AuthView extends GetView<AuthController> {
-  AuthView({super.key});
-  late GSForm form;
-  int id = 0;
+  const AuthView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +67,7 @@ class AuthView extends GetView<AuthController> {
                   ),
                   CustomButton(
                     text: "Se connecter",
-                    onPressed: controller.getAllUsers,
+                    onPressed: controller.login,
                     // onPressed: controller.login,
                     // onPressed: () =>
                     //     controller.getUserByUsername("ahmahmedmili76@gmail.com"),

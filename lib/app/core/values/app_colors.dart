@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // Define global colors
+  static const Color transparent =
+      Colors.transparent; // Built-in transparent color
   static const Color darkColor = Colors.black;
   static const Color ligthColor = Colors.white;
   static const Color primaryColor = Color(0xFF123456);
@@ -12,6 +14,7 @@ class AppColors {
   static const Color orangeColor = Color(0xFFF09D38);
   static const Color darkGray = Color(0xFF999999);
   static const Color shadowBlack20 = Color(0x33000000);
+  static const Color lightPurple = Color(0xFFE6D7FD);
 
   ///#97D9B5
   // Add more as needed

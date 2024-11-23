@@ -1,7 +1,9 @@
+import 'package:code_g/app/core/services/local_storage_service.dart';
+import 'package:code_g/app/helpers/enums.dart';
+import 'package:code_g/app/helpers/modals/user.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:code_g/app/helpers/modals/user.dart';
 
 class AuthController extends GetxController {
   //TODO: Implement AuthController
@@ -51,7 +53,7 @@ class AuthController extends GetxController {
           .from('users') // Replace 'users' with your table name if different
           .select();
 
-      if (response != null && response.isNotEmpty) {
+      if (response.isNotEmpty) {
         print("Users fetched successfully: $response");
         return List<Map<String, dynamic>>.from(response);
       } else {
@@ -78,11 +80,16 @@ class AuthController extends GetxController {
     if (emailController.text.isNotEmpty && passwordController.text.isNotEmpty) {
       String email = emailController.text;
       String password = passwordController.text;
-      // Navigate to the home page on successful login
-      print("email == $email");
       print("password == $password");
-      getUserByUsername(email);
-      // Get.offNamed('/home');
+      final localStorage = new LocalStorageService();
+      final UserModel user = new UserModel(
+        login: email,
+        company: Company.ROBERT,
+        workstation: Workstation.REGLEUR_MACHINE,
+      );
+      localStorage.saveString("user_data", user.toString());
+      // getUserByUsername(email);
+      Get.offAllNamed('/home');
     } else {
       Get.snackbar('Error', 'Please enter email and password');
     }

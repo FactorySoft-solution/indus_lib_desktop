@@ -48,4 +48,9 @@ class AppTextStyles {
     fontWeight: FontWeight.normal,
     color: Colors.grey,
   );
+  static const TextStyle blueLabel = TextStyle(
+    fontSize: 7.0,
+    fontWeight: FontWeight.w700,
+    color: AppColors.purpleColor,
+  );
 }
