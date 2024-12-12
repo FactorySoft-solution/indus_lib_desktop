@@ -44,6 +44,8 @@ dependencies:
   supabase_flutter: ^2.8.0
   flutter_dotenv: ^5.2.1
   dart_jsonwebtoken: ^2.14.1
+  window_size: ^0.1.0
+  desktop_window: ^0.4.2
 
 dev_dependencies:
   flutter_test:
@@ -70,7 +72,9 @@ flutter:
   assets:
     - assets/
     - assets/sttr/
+    - assets/robert/
     - assets/cards/
+    - assets/sidebar/
     - assets/config/
     - assets/auth/
     # - .env

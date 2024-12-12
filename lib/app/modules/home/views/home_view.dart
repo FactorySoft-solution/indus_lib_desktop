@@ -16,45 +16,45 @@ class HomeView extends GetView<HomeController> {
 
   final paths = [
     {
-      "path": "/",
+      "path": "1",
       "image": "assets/cards/db.png",
       "label": "Base de données des pièces fabriquées en atelier",
     },
     {
-      "path": "/",
+      "path": "2",
       "image": "assets/cards/files.png",
       "label": "Base de données du catalogue des fournisseurs d’outils",
     },
     {
-      "path": "/",
+      "path": "3",
       "image": "assets/cards/folders.png",
       "label":
           "Base de données de catalogues et de spécifications de machines et de Mv",
     },
     {
-      "path": "/",
+      "path": "4",
       "image": "assets/cards/association.png",
       "label": "Base de données Robert pour les instructions générales",
     },
     {
-      "path": "/",
+      "path": "5",
       "image": "assets/cards/iso.png",
       "label":
           "Base de données de documents et de normes ISO Robert et STTR qualitè & moyen de controle",
     },
     {
-      "path": "/",
+      "path": "6",
       "image": "assets/cards/maintainer.png",
       "label":
           "Base de données de stock d’outillage avec mises à jour pour l’atelier STTR ( desktops & mobile )",
     },
     {
-      "path": "/",
+      "path": "7",
       "image": "assets/cards/dismensions.png",
       "label": "Générateur et calculateur de dimensions de contrôle moyennes",
     },
     {
-      "path": "/",
+      "path": "8",
       "image": "assets/cards/calculator.png",
       "label":
           "Calculateur des opérations spécifiques Robert (tronçage, filetage, taraudage, etc.)",
@@ -62,20 +62,18 @@ class HomeView extends GetView<HomeController> {
   ];
   final paths2 = [
     {
-      "path": "/",
+      "path": "9",
       "image": "assets/cards/code_generator.png",
       "label": "Générateur de code pour la migration de machine",
     },
     {
-      "path": "/",
+      "path": "10",
       "image": "assets/cards/settings.png",
       "label": "Générateur de code pour la migration de machine",
     },
   ];
   @override
   Widget build(BuildContext context) {
-    // final width = MediaQuery.of(context).size.width;
-    // final height = MediaQuery.of(context).size.height;
     return Scaffold(
       backgroundColor: AppColors.purpleColor,
       appBar: AppBar(
@@ -130,8 +128,8 @@ class HomeView extends GetView<HomeController> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 500,
-                height: 280,
+                width: 800,
+                height: 420,
                 child: GridView.count(
                   crossAxisCount: 4, // Number of columns
                   crossAxisSpacing: 10, // Horizontal spacing between grid items
@@ -140,12 +138,16 @@ class HomeView extends GetView<HomeController> {
                   children: List.generate(
                     paths.length,
                     (index) {
-                      return ServiceCardWidget(
-                        width: 120,
-                        height: 120,
-                        imagePath: paths[index]['image'] ?? '',
-                        text: paths[index]['label'] ?? '',
-                        onTap: () {},
+                      return ClickableWidget(
+                        onTap: () => Get.toNamed(Routes.MAIN,
+                            arguments: {"page": paths[index]['path']}),
+                        child: ServiceCardWidget(
+                          width: 120,
+                          height: 120,
+                          imagePath: paths[index]['image'] ?? '',
+                          text: paths[index]['label'] ?? '',
+                          onTap: () {},
+                        ),
                       );
                     },
                   ),
@@ -155,19 +157,20 @@ class HomeView extends GetView<HomeController> {
                 height: 10,
               ),
               SizedBox(
-                width: 500,
+                width: 800,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     ServiceCardWidget(
-                      width: 120,
-                      height: 120,
+                      width: 190,
+                      height: 170,
                       onTap: () {},
                       imagePath: paths2[0]['image'] ?? "",
                       text: paths2[0]['label'] ?? "",
                     ),
                     ServiceCardWidget(
-                      width: 120,
+                      width: 190,
+                      height: 170,
                       onTap: () {},
                       imagePath: paths2[1]['image'] ?? "",
                       text: paths2[1]['label'] ?? "",

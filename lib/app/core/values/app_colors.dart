@@ -10,7 +10,9 @@ class AppColors {
   static const Color secondaryColor = Color(0xFF654321);
   static const Color accentColor = Color(0xFF00FF00);
   static const Color backgroundColor = Color(0xFF97D9B5);
+  static const Color darkPurpleColor = Color(0xFF6009EB);
   static const Color purpleColor = Color(0xFF7525F5);
+  static const Color softPurpleColor = Color(0xFF8943F9);
   static const Color orangeColor = Color(0xFFF09D38);
   static const Color darkGray = Color(0xFF999999);
   static const Color shadowBlack20 = Color(0x33000000);

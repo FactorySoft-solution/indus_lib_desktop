@@ -1,3 +1,4 @@
+import 'package:code_g/app/modules/home/views/main.dart';
 import 'package:get/get.dart';
 
 import '../modules/auth/bindings/auth_binding.dart';
@@ -9,13 +10,6 @@ import '../modules/create_project/views/create_project_view.dart';
 import '../modules/home/bindings/home_binding.dart';
 import '../modules/home/views/home_view.dart';
 
-// import 'package:code_g/app/modules/profile/profile_binding.dart';
-// import 'package:code_g/app/modules/profile/profile_view.dart';
-// import 'package:code_g/app/modules/settings/settings_binding.dart';
-// import 'package:code_g/app/modules/settings/settings_view.dart';
-// import 'package:code_g/app/modules/settings_detail/settings_detail_binding.dart';
-// import 'package:code_g/app/modules/settings_detail/settings_detail_view.dart';
-
 part 'app_routes.dart';
 
 class AppPages {
@@ -25,12 +19,10 @@ class AppPages {
     GetPage(
       name: _Paths.SPLASH,
       page: () => const SplashScreen(),
-      // children: [],
     ),
     GetPage(
       name: _Paths.AUTH,
       page: () => const AuthPage(),
-      // children: [],
     ),
     GetPage(
       name: _Paths.CREATEPROJECT,
@@ -40,6 +32,11 @@ class AppPages {
     GetPage(
       name: _Paths.HOME,
       page: () => HomeView(),
+      binding: HomeBinding(),
+    ),
+    GetPage(
+      name: _Paths.MAIN,
+      page: () => MainView(),
       binding: HomeBinding(),
     ),
     GetPage(

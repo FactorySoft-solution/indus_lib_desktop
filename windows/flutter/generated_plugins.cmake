@@ -4,8 +4,10 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   app_links
+  desktop_window
   file_selector_windows
   url_launcher_windows
+  window_size
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST

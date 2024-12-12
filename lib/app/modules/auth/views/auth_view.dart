@@ -18,8 +18,8 @@ class AuthView extends GetView<AuthController> {
   Widget build(BuildContext context) {
     final pageWidth = MediaQuery.of(context).size.width;
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
+      body: SingleChildScrollView(
+        child: Center(
           child: Column(
             children: [
               IconButtonWidget(

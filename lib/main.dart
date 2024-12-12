@@ -1,21 +1,23 @@
-import 'package:code_g/app/routes/app_pages.dart';
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'dart:io';
+
 import 'package:code_g/app/core/config/app_config.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:code_g/app/routes/app_pages.dart';
+import 'package:desktop_window/desktop_window.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:get/get.dart';
+import 'package:window_size/window_size.dart';
 
 void main() async {
-  WidgetsFlutterBinding
-      .ensureInitialized(); // Required to initialize before runApp
-  // Load the .env file
+  WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env.developement");
   AppConfig config = await AppConfig.loadConfig(
       'dev'); // Change 'dev' to 'staging' or 'prod' as needed
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
-  );
+  DesktopWindow.setWindowSize(const Size(1700, 1000));
+  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    setWindowMinSize(const Size(1700, 1000));
+    setWindowMaxSize(const Size(1700, 1000));
+  }
 
   runApp(MyApp(config: config));
 }
