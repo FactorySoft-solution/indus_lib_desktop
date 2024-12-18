@@ -26,18 +26,18 @@ class CustomButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: width, // Use provided width, or let it adapt to content size
-      height: height,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(borderRadius),
-          ),
-          padding: EdgeInsets.symmetric(vertical: padding, horizontal: padding),
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(borderRadius),
         ),
-        onPressed: onPressed,
+        padding: EdgeInsets.symmetric(vertical: padding, horizontal: padding),
+      ),
+      onPressed: onPressed,
+      child: SizedBox(
+        width: width, // Use provided width, or let it adapt to content size
+        height: height,
         child: Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,

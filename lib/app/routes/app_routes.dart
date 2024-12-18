@@ -16,6 +16,6 @@ abstract class _Paths {
   static const LOGIN = '/login';
   static const HOME = '/home';
   static const MAIN = '/main';
-  static const CREATEPROJECT = '/CreateProject';
+  static const CREATEPROJECT = '/main/CreateProject';
   static const AUTH = '/auth';
 }

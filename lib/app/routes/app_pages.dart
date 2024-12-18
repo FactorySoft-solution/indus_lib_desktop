@@ -25,20 +25,21 @@ class AppPages {
       page: () => const AuthPage(),
     ),
     GetPage(
-      name: _Paths.CREATEPROJECT,
-      page: () => CreateProjectView(),
-      binding: CreateProjectBinding(),
-    ),
-    GetPage(
       name: _Paths.HOME,
       page: () => HomeView(),
       binding: HomeBinding(),
     ),
     GetPage(
-      name: _Paths.MAIN,
-      page: () => MainView(),
-      binding: HomeBinding(),
-    ),
+        name: _Paths.MAIN,
+        page: () => MainView(),
+        binding: HomeBinding(),
+        children: [
+          GetPage(
+            name: _Paths.CREATEPROJECT,
+            page: () => CreateProjectView(),
+            binding: CreateProjectBinding(),
+          ),
+        ]),
     GetPage(
       name: _Paths.LOGIN,
       page: () => AuthView(),

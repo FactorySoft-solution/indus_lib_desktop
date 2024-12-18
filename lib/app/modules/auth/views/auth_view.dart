@@ -4,6 +4,7 @@ import 'package:code_g/app/widgets/CustomCard.dart';
 import 'package:code_g/app/widgets/back_button.dart';
 import 'package:code_g/app/widgets/button.dart';
 import 'package:code_g/app/widgets/icon_botton_widget.dart';
+import 'package:code_g/app/widgets/icon_widget.dart';
 import 'package:code_g/app/widgets/password_input_widget.dart';
 import 'package:code_g/app/widgets/text_input_widget.dart';
 import 'package:flutter/material.dart';
@@ -22,9 +23,9 @@ class AuthView extends GetView<AuthController> {
         child: Center(
           child: Column(
             children: [
-              IconButtonWidget(
+              const IconWidget(
                   size: 250,
-                  onPressed: () => Get.toNamed("/"),
+                  // onPressed: () => Get.toNamed("/"),
                   imagePath: "assets/logo.png"),
               CustomCard(
                 width: pageWidth * 0.7,

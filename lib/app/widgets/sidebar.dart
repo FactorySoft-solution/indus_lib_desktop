@@ -1,7 +1,6 @@
 import 'package:code_g/app/core/values/app_colors.dart';
 import 'package:code_g/app/modules/home/controllers/home_controller.dart';
 import 'package:code_g/app/widgets/clickable_widget.dart';
-import 'package:code_g/app/widgets/icon_botton_widget.dart';
 import 'package:code_g/app/widgets/icon_widget.dart';
 import 'package:code_g/app/widgets/sidebar-list-item.dart';
 import 'package:flutter/material.dart';
@@ -15,7 +14,6 @@ class SidebarWidget extends StatelessWidget {
     {"text": 'Formes de pièces', "icon": 'assets/sidebar/piece_forms.svg'},
     {"text": 'Matières premières', "icon": 'assets/sidebar/material.svg'},
     {"text": 'Liste des programmes', "icon": 'assets/sidebar/programs.svg'},
-    // {"text": 'Paramètres', "icon": 'assets/sidebar/params.svg'},
   ];
 
   final HomeController controller = Get.put(HomeController());
@@ -26,7 +24,7 @@ class SidebarWidget extends StatelessWidget {
 
     return Container(
       height: contextHeight,
-      width: 250,
+      width: 280,
       decoration: const BoxDecoration(
         color: AppColors.purpleColor,
         borderRadius: BorderRadius.only(
@@ -50,7 +48,7 @@ class SidebarWidget extends StatelessWidget {
           ),
           Container(
             height: 15,
-            width: 200,
+            width: 250,
             decoration: const BoxDecoration(
               border: Border(
                 bottom: BorderSide(
@@ -65,11 +63,11 @@ class SidebarWidget extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SizedBox(
-                height: 350,
+                height: 370,
                 child: Column(
                   children: [
                     SizedBox(
-                      height: 250,
+                      height: 270,
                       child: ListView.builder(
                         itemCount: sideBarItems1.length,
                         itemBuilder: (context, index) {
@@ -117,18 +115,69 @@ class SidebarWidget extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(
-                height: 550,
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    top: 20,
-                    left: 20,
-                    right: 20,
-                    bottom: 10,
-                  ),
-                  child: IconWidget(
-                    imagePath: "assets/arobase-sttr.svg",
-                  ),
+              SizedBox(
+                height: 300,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const SizedBox(
+                      height: 30,
+                    ),
+                    Container(
+                      height: 70,
+                      width: 250,
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: AppColors.softPurpleColor,
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      child: const IconWidget(
+                        imagePath: "assets/arobase-sttr.svg",
+                      ),
+                    ),
+                    Expanded(
+                      // height: 220,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Obx(() {
+                            final isActive = controller.activePage.value ==
+                                'Ajouter une mouvelle pièce';
+                            return ClickableWidget(
+                              onTap: () {
+                                controller.updateActivePage(
+                                    'Ajouter une mouvelle pièce');
+                              },
+                              child: SidebarListItemWidget(
+                                Icon: 'assets/sidebar/new.svg',
+                                isActive: isActive,
+                                LabelText: 'Ajouter une mouvelle pièce',
+                              ),
+                            );
+                          }),
+                          const SizedBox(height: 15),
+                          Obx(() {
+                            final isActive = controller.activePage.value ==
+                                'Acceder a la base STTR';
+                            return ClickableWidget(
+                              onTap: () {
+                                controller
+                                    .updateActivePage('Acceder a la base STTR');
+                              },
+                              child: SidebarListItemWidget(
+                                Icon: 'assets/sidebar/sttr_db.svg',
+                                isActive: isActive,
+                                LabelText: 'Acceder a la base STTR',
+                              ),
+                            );
+                          }),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
