@@ -1,3 +1,4 @@
+import 'package:code_g/app/modules/create_project/controllers/create_project_controller.dart';
 import 'package:get/get.dart';
 
 import '../controllers/home_controller.dart';
@@ -12,6 +13,9 @@ class HomeBinding extends Bindings {
     Get.put(config); // Register AppConfig as a dependency
     Get.lazyPut<HomeController>(
       () => HomeController(),
+    );
+    Get.lazyPut<CreateProjectController>(
+      () => CreateProjectController(),
     );
   }
 }

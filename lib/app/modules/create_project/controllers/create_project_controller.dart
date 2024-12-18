@@ -1,4 +1,5 @@
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'dart:io';
 
@@ -7,6 +8,12 @@ class CreateProjectController extends GetxController {
   var dossProgFolder = Rxn<String>();
   var programmeFile = Rxn<File>();
   var ficheUtilPdf = Rxn<File>();
+  final pieceRef = TextEditingController();
+  final pieceIndice = TextEditingController();
+  final machine = TextEditingController();
+  final pieceDiametre = TextEditingController();
+  final pieceEjection = TextEditingController();
+  final pieceName = TextEditingController();
 
   Future<void> pickFile(String type) async {
     FilePickerResult? result;
