@@ -15,8 +15,6 @@ class IconWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     String extonsion = imagePath.split('.').last;
-    print('imagePath == $imagePath');
-    print('extonsion == $extonsion');
     if (extonsion == 'svg') {
       return SvgPicture.asset(
         imagePath,

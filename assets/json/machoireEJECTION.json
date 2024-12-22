@@ -1,0 +1,23 @@
+{
+      "titre": "Machoire Ejection",
+      "contenu": [
+        {
+          "id": 1,
+          "ligne": "Ejection ROBERT",
+          "types": [
+            { "id": 1, "type": "ejection Ø10-25" },
+            { "id": 2, "type": "ejection Ø25-45" },
+            { "id": 3, "type": "ejection Ø45-65" }
+          ]
+        },
+        {
+          "id": 2,
+          "ligne": "Ejection STTR",
+          "types": [
+            { "id": 4, "type": "ejection Ø10-25" },
+            { "id": 5, "type": "ejection Ø25-45" },
+            { "id": 6, "type": "ejection Ø45-65" }
+          ]
+        }
+      ]
+    }

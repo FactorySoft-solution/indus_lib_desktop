@@ -1,5 +1,6 @@
 import 'package:code_g/app/core/values/app_text_styles.dart';
 import 'package:code_g/app/widgets/CustomCard.dart';
+import 'package:code_g/app/widgets/DropdownButtonWidget.dart';
 import 'package:code_g/app/widgets/text_input_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -46,12 +47,36 @@ class CreateProjectView extends GetView<CreateProjectController> {
                         hint: 'Ajouter refº pièce',
                         controller: controller.pieceRef,
                       ),
-                      CustomTextInput(
-                        width: 300,
-                        height: 40,
-                        label: 'Indice de la pièce *',
-                        hint: 'Choisir le diamètre de brute',
-                        controller: controller.pieceIndice,
+                      FutureBuilder<RxList<dynamic>>(
+                        future: controller.extractJsonDate('indicePIECE'),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const CircularProgressIndicator();
+                          } else if (snapshot.hasError) {
+                            return Text('Error: ${snapshot.error}');
+                          } else if (!snapshot.hasData ||
+                              snapshot.data!.isEmpty) {
+                            return const Text('No data available');
+                          }
+                          return CustomDropdown(
+                            controller: controller
+                                .pieceIndice, // Bind the TextEditingController
+                            value: controller.pieceIndice.text.isEmpty
+                                ? null
+                                : controller
+                                    .pieceIndice.text, // Bind the current value
+                            items: controller.indicePieceData
+                                .map((item) => item["indice"])
+                                .toList(), // Dynamically populated list
+                            label: "Indice Piece",
+                            hint: controller.pieceIndice.text.isEmpty
+                                ? "Select Indice Piece"
+                                : controller.pieceIndice.text,
+                            width: 300,
+                            height: 40,
+                          );
+                        },
                       ),
                       CustomTextInput(
                         width: 300,
@@ -136,48 +161,5 @@ class CreateProjectView extends GetView<CreateProjectController> {
         )
       ],
     );
-
-    // ListView(
-    //   children: [
-    //     FilePickerButton(
-    //       buttonText: 'Upload Image Plan (PDF)',
-    //       onPick: () => controller.pickFile('pdf'),
-    //     ),
-    //     Obx(() => controller.imagePlanPdf.value != null
-    //         ? Text('File Selected: ${controller.imagePlanPdf.value!.path}')
-    //         : const SizedBox.shrink()),
-    //     const SizedBox(height: 20),
-    //     FilePickerButton(
-    //       buttonText: 'Select Dossier Programmation (Folder)',
-    //       onPick: () => controller.pickFile('folder'),
-    //     ),
-    //     Obx(() => controller.dossProgFolder.value != null
-    //         ? Text('Folder Selected: ${controller.dossProgFolder.value!}')
-    //         : const SizedBox.shrink()),
-    //     const SizedBox(height: 20),
-    //     FilePickerButton(
-    //       buttonText: 'Upload Programme (File)',
-    //       onPick: () => controller.pickFile('file'),
-    //     ),
-    //     Obx(() => controller.programmeFile.value != null
-    //         ? Text('File Selected: ${controller.programmeFile.value!.path}')
-    //         : const SizedBox.shrink()),
-    //     const SizedBox(height: 20),
-    //     FilePickerButton(
-    //       buttonText: 'Upload Fiche Util (PDF)',
-    //       onPick: () => controller.pickFile('pdf'),
-    //     ),
-    //     Obx(() => controller.ficheUtilPdf.value != null
-    //         ? Text('File Selected: ${controller.ficheUtilPdf.value!.path}')
-    //         : const SizedBox.shrink()),
-    //     const SizedBox(height: 40),
-    //     ElevatedButton(
-    //       onPressed: () {
-    //         // Perform form validation and submission
-    //       },
-    //       child: const Text('Submit'),
-    //     ),
-    //   ],
-    // );
   }
 }

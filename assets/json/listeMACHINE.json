@@ -1,0 +1,23 @@
+{
+      "titre": "Machines",
+      "contenu": [
+        {
+          "id": 1,
+          "ligne": "Machine ROBERT",
+          "machines": [
+            { "id": 1, "nom": "G160" },
+            { "id": 2, "nom": "R200" }
+          ]
+        },
+        {
+          "id": 2,
+          "ligne": "Machine STTR",
+          "machines": [
+            { "id": 3, "nom": "SV32" },
+            { "id": 4, "nom": "KMX" },
+            { "id": 5, "nom": "BX26" },
+            { "id": 6, "nom": "CU-HAAS" }
+          ]
+        }
+      ]
+    }

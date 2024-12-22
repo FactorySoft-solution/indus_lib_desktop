@@ -1,0 +1,13 @@
+{
+      "titre": "Indice Pièce",
+      "contenu": [
+        { "id": 1, "indice": "A" },
+        { "id": 2, "indice": "B" },
+        { "id": 3, "indice": "C" },
+        { "id": 4, "indice": "D" },
+        { "id": 5, "indice": "E" },
+        { "id": 6, "indice": "F" },
+        { "id": 7, "indice": "G" },
+        { "id": 8, "indice": "H" }
+      ]
+    }

@@ -1,0 +1,10 @@
+{
+      "titre": "Liste Programmeur",
+      "contenu": [
+        { "id": 1, "nom": "Pascal" },
+        { "id": 2, "nom": "Kevin" },
+        { "id": 3, "nom": "Ahmed" },
+        { "id": 4, "nom": "Houssem" },
+        { "id": 5, "nom": "Catherine" }
+      ]
+    }
