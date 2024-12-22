@@ -32,7 +32,6 @@ class _CustomDropdownState extends State<CustomDropdown> {
   @override
   void initState() {
     super.initState();
-    // Convert List<dynamic> to List<String>
     convertedItems = widget.items.map((item) => item.toString()).toList();
   }
 

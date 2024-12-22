@@ -17,13 +17,16 @@ class CreateProjectController extends GetxController {
   final pieceDiametre = TextEditingController();
   final pieceEjection = TextEditingController();
   final pieceName = TextEditingController();
-  // var indicePieceData = <String>[].obs; // Observable list of strings
-  var indicePieceData = <dynamic>[].obs; // Reactive list of strings
+  final epaisseur = TextEditingController();
+  final materiel = TextEditingController();
+  final form = TextEditingController();
+  final programmeur = TextEditingController();
+  final regieur = TextEditingController();
+  final specification = TextEditingController();
 
   @override
   void onInit() {
     super.onInit();
-    // extractDate(); // Automatically load data on widget display
   }
 
   Future<void> pickFile(String type) async {
@@ -54,15 +57,53 @@ class CreateProjectController extends GetxController {
     }
   }
 
-  Future<RxList<dynamic>> extractJsonDate(String fileName) async {
+  Future<List<dynamic>> extractIndicesJsonDate() async {
     try {
-      final Map<String, dynamic> fetchedJsonData =
-          await sharedService.loadJsonFromAssets('assets/json/$fileName.json');
-      indicePieceData.value = [...fetchedJsonData["contenu"]];
-      return indicePieceData;
+      final Map<String, dynamic> fetchedJsonData = await sharedService
+          .loadJsonFromAssets('assets/json/indicePIECE.json');
+      // indicePieceData.value = [...fetchedJsonData["contenu"]];
+      var newData = [...fetchedJsonData["contenu"]];
+
+      return newData;
     } catch (e) {
       print('Error: $e');
-      return indicePieceData;
+      return [];
+    }
+  }
+
+  Future<List<dynamic>> extractMachineJsonDate() async {
+    try {
+      final Map<String, dynamic> fetchedJsonData = await sharedService
+          .loadJsonFromAssets('assets/json/listeMACHINE.json');
+      var newData = [...fetchedJsonData["contenu"][0]["machines"]];
+      return newData;
+    } catch (e) {
+      print('Error: $e');
+      return [];
+    }
+  }
+
+  Future<List<dynamic>> extractMechoireJsonDate() async {
+    try {
+      final Map<String, dynamic> fetchedJsonData = await sharedService
+          .loadJsonFromAssets('assets/json/machoireEJECTION.json');
+      var newData = [...fetchedJsonData["contenu"][0]["types"]];
+      return newData;
+    } catch (e) {
+      print('Error: $e');
+      return [];
+    }
+  }
+
+  Future<List<dynamic>> extractProgrammersJsonDate() async {
+    try {
+      final Map<String, dynamic> fetchedJsonData = await sharedService
+          .loadJsonFromAssets('assets/json/listePROGRAMMEUR.json');
+      var newData = [...fetchedJsonData["contenu"]];
+      return newData;
+    } catch (e) {
+      print('Error: $e');
+      return [];
     }
   }
 
