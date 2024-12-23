@@ -1,7 +1,7 @@
 import 'package:code_g/app/core/values/app_text_styles.dart';
 import 'package:code_g/app/widgets/CustomCard.dart';
 import 'package:code_g/app/widgets/DropdownButtonWidget.dart';
-import 'package:code_g/app/widgets/file_picker_button.dart';
+import 'package:code_g/app/widgets/image_picker_widget.dart';
 import 'package:code_g/app/widgets/text_input_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -121,11 +121,7 @@ class CreateProjectView extends GetView<CreateProjectController> {
           hint: 'Choisir/ saisir la matière de la pièce',
           controller: controller.materiel,
         ),
-        FilePickerButton(
-          buttonText: "Ajouter l’image de la pièce",
-          onPick: () {},
-        ),
-        CustomTextInput(
+        ImagePickerWidget(
           width: width,
           height: height,
           label: 'Forme Pièce *',
