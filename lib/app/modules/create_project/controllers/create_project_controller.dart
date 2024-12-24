@@ -19,10 +19,15 @@ class CreateProjectController extends GetxController {
   final pieceName = TextEditingController();
   final epaisseur = TextEditingController();
   final materiel = TextEditingController();
-  final form = TextEditingController();
+  final TextEditingController form = TextEditingController();
   final programmeur = TextEditingController();
   final regieur = TextEditingController();
   final specification = TextEditingController();
+  final organeBP = TextEditingController();
+  final organeCB = TextEditingController();
+  final TextEditingController selectedItemsController = TextEditingController();
+  String? selectedFile;
+  final caoFilePath = TextEditingController(); // Add this
 
   @override
   void onInit() {

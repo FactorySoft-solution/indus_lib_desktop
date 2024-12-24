@@ -1,6 +1,9 @@
 import 'package:code_g/app/core/values/app_text_styles.dart';
 import 'package:code_g/app/widgets/CustomCard.dart';
 import 'package:code_g/app/widgets/DropdownButtonWidget.dart';
+import 'package:code_g/app/widgets/checkbox_group_widget.dart';
+import 'package:code_g/app/widgets/file_picker_button.dart';
+import 'package:code_g/app/widgets/file_picker_widget.dart';
 import 'package:code_g/app/widgets/image_picker_widget.dart';
 import 'package:code_g/app/widgets/text_input_widget.dart';
 import 'package:flutter/material.dart';
@@ -16,7 +19,7 @@ class CreateProjectView extends GetView<CreateProjectController> {
     final pageWidth = MediaQuery.of(context).size.width;
     final pageHeight = MediaQuery.of(context).size.height;
 
-    const inputWidth = 300.0;
+    const inputWidth = 450.0;
     const inputHeight = 40.0;
 
     return Column(
@@ -37,6 +40,7 @@ class CreateProjectView extends GetView<CreateProjectController> {
                   const EdgeInsets.symmetric(vertical: 8.0, horizontal: 28),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildLeftColumn(inputWidth, inputHeight),
                   _buildRightColumn(inputWidth, inputHeight),
@@ -51,6 +55,7 @@ class CreateProjectView extends GetView<CreateProjectController> {
 
   Widget _buildLeftColumn(double width, double height) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         CustomTextInput(
           width: width,
@@ -99,6 +104,35 @@ class CreateProjectView extends GetView<CreateProjectController> {
           label: 'Nom de la pièce *',
           hint: 'Ajouter image pièce',
           controller: controller.pieceName,
+        ),
+        SizedBox(
+          width: width,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              CustomDropdown(
+                label: "Organe de serrage Broche principale *",
+                hint: "Selection Organe BP",
+                controller: controller.organeBP,
+                items: ["1", "2", "3"],
+                width: (width / 2) - 5,
+                height: height,
+              ),
+              CustomDropdown(
+                label: "Organe de serrage contre Broche *",
+                hint: "Selection Organe CB",
+                controller: controller.organeCB,
+                items: ["1", "2", "3"],
+                width: (width / 2) - 5,
+                height: height,
+              ),
+            ],
+          ),
+        ),
+        CheckboxGroupWidget(
+          items: ["Tirage", "Cimblot", "Manchon"],
+          controller: controller.selectedItemsController,
+          spacing: 12.0,
         ),
       ],
     );
@@ -150,6 +184,14 @@ class CreateProjectView extends GetView<CreateProjectController> {
           label: 'Sélectionner spécificité pièce',
           hint: 'Sélectionner spécificité pièce',
           controller: controller.specification,
+        ),
+        FilePickerWidget(
+          buttonText: "CAO*",
+          onPick: (selectedFile) {
+            if (selectedFile != null) {
+              controller.caoFilePath.text = selectedFile;
+            }
+          },
         ),
       ],
     );

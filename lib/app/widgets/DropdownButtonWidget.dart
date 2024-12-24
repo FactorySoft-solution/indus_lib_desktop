@@ -27,47 +27,48 @@ class CustomDropdown extends StatefulWidget {
 }
 
 class _CustomDropdownState extends State<CustomDropdown> {
-  List<String> convertedItems = []; // Initialize as an empty list
+  late String? selectedValue;
+  List<String> convertedItems = [];
 
   @override
   void initState() {
     super.initState();
     convertedItems = widget.items.map((item) => item.toString()).toList();
+    selectedValue = widget.value;
   }
 
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: SizedBox(
         width: widget.width ?? screenWidth * 0.9,
-        height: widget.height,
-        child: InputDecorator(
+        height: 4 + widget.height!,
+        child: DropdownButtonFormField<String>(
           decoration: InputDecoration(
+            labelText: widget.label,
+            hintText: widget.hint,
             border: const OutlineInputBorder(),
             prefixIcon: widget.prefixIcon,
           ),
-          isEmpty: widget.value == null || widget.value!.isEmpty,
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: widget.value,
-              hint: Text(widget.hint),
-              isExpanded: true,
-              onChanged: (String? newValue) {
-                if (newValue != null) {
-                  widget.controller.text =
-                      newValue; // Update the controller value
-                }
-              },
-              items: convertedItems.map((String item) {
-                return DropdownMenuItem<String>(
-                  value: item,
-                  child: Text(item),
-                );
-              }).toList(),
-            ),
-          ),
+          value: selectedValue,
+          isExpanded: true,
+          onChanged: (String? newValue) {
+            if (newValue != null) {
+              setState(() {
+                selectedValue = newValue;
+              });
+              widget.controller.text = newValue;
+            }
+          },
+          items: convertedItems.map((String item) {
+            return DropdownMenuItem<String>(
+              value: item,
+              child: Text(item),
+            );
+          }).toList(),
         ),
       ),
     );
