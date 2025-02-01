@@ -1,8 +1,8 @@
 import 'package:code_g/app/core/values/app_text_styles.dart';
 import 'package:code_g/app/widgets/CustomCard.dart';
 import 'package:code_g/app/widgets/DropdownButtonWidget.dart';
+import 'package:code_g/app/widgets/button.dart';
 import 'package:code_g/app/widgets/checkbox_group_widget.dart';
-import 'package:code_g/app/widgets/file_picker_button.dart';
 import 'package:code_g/app/widgets/file_picker_widget.dart';
 import 'package:code_g/app/widgets/image_picker_widget.dart';
 import 'package:code_g/app/widgets/text_input_widget.dart';
@@ -139,6 +139,21 @@ class CreateProjectView extends GetView<CreateProjectController> {
   }
 
   Widget _buildRightColumn(double width, double height) {
+    void _handleFolderPicked(Map<String, List<String>>? filesByType) {
+      if (filesByType != null) {
+        // controller.caoFilePath.text = selectedFile
+        print("Files grouped by type received in parent:");
+        filesByType.forEach((extension, files) {
+          print("Files with extension .$extension:");
+          for (var file in files) {
+            print(" - $file");
+          }
+        });
+      } else {
+        print("Folder picker was canceled.");
+      }
+    }
+
     return Column(
       children: [
         CustomTextInput(
@@ -185,14 +200,39 @@ class CreateProjectView extends GetView<CreateProjectController> {
           hint: 'Sélectionner spécificité pièce',
           controller: controller.specification,
         ),
-        FilePickerWidget(
-          buttonText: "CAO*",
-          onPick: (selectedFile) {
-            if (selectedFile != null) {
-              controller.caoFilePath.text = selectedFile;
-            }
-          },
+        // select files
+        Row(
+          children: [
+            // FilePickerWidget(
+            //   buttonText: "CAO*",
+            //   onPick: (selectedFile) {
+            //     if (selectedFile != null) {
+            // controller.caoFilePath.text = selectedFile;
+            //     }
+            //   },
+            // ),
+            // FilePickerWidget(
+            //   buttonText: "FAO*",
+            //   onPick: (selectedFile) {
+            //     if (selectedFile != null) {
+            //       controller.faoFilePath.text = selectedFile;
+            //     }
+            //   },
+            // ),
+            // FilePickerWidget(
+            //   buttonText: "File Z*",
+            //   onPick: (selectedFile) {
+            //     if (selectedFile != null) {
+            //       controller.fileZPath.text = selectedFile;
+            //     }
+            //   },
+            // ),
+
+            FilePickerWidget(buttonText: "Plan*", onPick: _handleFolderPicked),
+          ],
         ),
+
+        CustomButton(text: 'Ajouter le pièce', onPressed: () => {})
       ],
     );
   }

@@ -1,50 +1,74 @@
 import 'dart:io';
-import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:path_provider/path_provider.dart';
 
+import 'package:code_g/app/core/services/files_services.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+
+// ignore: must_be_immutable
 class FilePickerWidget extends StatelessWidget {
   final String buttonText;
-  final Function(String?) onPick;
+  final String? type;
+  final Function(Map<String, List<String>>?)
+      onPick; // Updated to accept the result
 
-  const FilePickerWidget({
-    Key? key,
+  FilePickerWidget({
+    super.key,
     required this.buttonText,
     required this.onPick,
-  }) : super(key: key);
+    this.type = "file",
+  });
+  FilesServices filesServices = FilesServices();
 
   Future<void> _pickFile() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles();
-
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      dialogTitle: "Select a Folder",
+      type: FileType.any, // Accept any type
+      allowMultiple: false, // Single selection
+      allowCompression: false, // Optional, prevents compression
+    );
     if (result != null && result.files.single.path != null) {
       String sourceFilePath = result.files.single.path!;
-      String fileName = result.files.single.name;
 
-      // Get the desktop directory
-      Directory desktopDirectory = Directory(
-        "${Platform.environment['USERPROFILE'] ?? '/home/${Platform.environment['USER']}'}/Desktop",
-      );
+      // file type
+      String fileType = await filesServices.checkFileType(sourceFilePath);
+      print("filetype == $fileType");
+      Map<String, List<String>> filesByType =
+          filesServices.regroupFilesByType([fileType]);
+      onPick(filesByType);
 
-      // Destination file path on the desktop
-      String destinationFilePath = "${desktopDirectory.path}/$fileName";
+      // save file
+      // filesServices.registerFile(sourceFilePath);
+    } else {
+      onPick(null);
+    }
+  }
 
-      try {
-        // Move the file to the desktop
-        File(sourceFilePath).copySync(destinationFilePath);
+  Future<void> _pickFolder() async {
+    String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
 
-        // Notify the parent widget with the new file path
-        onPick(destinationFilePath);
-      } catch (e) {
-        // Handle errors if the file move fails
-        print("Error moving file: $e");
+    if (selectedDirectory != null) {
+      // List files and folders inside the selected directory
+      List<FileSystemEntity> filesList =
+          filesServices.listFilesAndFolders(selectedDirectory);
+      List<String> filePaths = [];
+      for (var element in filesList) {
+        filePaths.add(element.path);
       }
+
+      Map<String, List<String>> filesByType =
+          filesServices.regroupFilesByType(filePaths);
+      onPick(filesByType);
+    } else {
+      // User canceled the picker
+      print("User canceled the folder picker");
+      onPick(null); // Notify the parent that the operation was canceled
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
-      onPressed: () => _pickFile(), // Ensure a parameterless callback
+      onPressed: () => type == "folder" ? _pickFolder() : _pickFile(),
       style: ElevatedButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 15.0),
       ),

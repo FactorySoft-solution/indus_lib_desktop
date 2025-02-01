@@ -28,6 +28,9 @@ class CreateProjectController extends GetxController {
   final TextEditingController selectedItemsController = TextEditingController();
   String? selectedFile;
   final caoFilePath = TextEditingController(); // Add this
+  final faoFilePath = TextEditingController(); // Add this
+  final fileZPath = TextEditingController(); // Add this
+  final planFilePath = TextEditingController(); // Add this
 
   @override
   void onInit() {

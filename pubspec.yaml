@@ -48,6 +48,7 @@ dependencies:
   window_size: ^0.1.0
   desktop_window: ^0.4.2
   image_picker: ^0.8.9
+  filesystem_picker: ^4.1.0
 
 dev_dependencies:
   flutter_test:
