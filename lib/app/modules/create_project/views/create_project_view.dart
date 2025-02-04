@@ -203,31 +203,31 @@ class CreateProjectView extends GetView<CreateProjectController> {
         // select files
         Row(
           children: [
-            // FilePickerWidget(
-            //   buttonText: "CAO*",
-            //   onPick: (selectedFile) {
-            //     if (selectedFile != null) {
-            // controller.caoFilePath.text = selectedFile;
-            //     }
-            //   },
-            // ),
-            // FilePickerWidget(
-            //   buttonText: "FAO*",
-            //   onPick: (selectedFile) {
-            //     if (selectedFile != null) {
-            //       controller.faoFilePath.text = selectedFile;
-            //     }
-            //   },
-            // ),
-            // FilePickerWidget(
-            //   buttonText: "File Z*",
-            //   onPick: (selectedFile) {
-            //     if (selectedFile != null) {
-            //       controller.fileZPath.text = selectedFile;
-            //     }
-            //   },
-            // ),
-
+            FilePickerWidget(
+                buttonText: "CAO*",
+                //   onPick: (selectedFile) {
+                //     if (selectedFile != null) {
+                // controller.caoFilePath.text = selectedFile;
+                //     }
+                //   },
+                onPick: _handleFolderPicked),
+            FilePickerWidget(
+                buttonText: "FAO*",
+                // onPick: (selectedFile) {
+                //   if (selectedFile != null) {
+                //     controller.faoFilePath.text = selectedFile;
+                //   }
+                // },
+                onPick: _handleFolderPicked),
+            FilePickerWidget(
+                type: 'folder',
+                buttonText: "File Z*",
+                // onPick: (selectedFile) {
+                //   if (selectedFile != null) {
+                //     controller.fileZPath.text = selectedFile;
+                //   }
+                // },
+                onPick: _handleFolderPicked),
             FilePickerWidget(buttonText: "Plan*", onPick: _handleFolderPicked),
           ],
         ),

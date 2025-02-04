@@ -1,4 +1,5 @@
 import 'package:code_g/app/modules/home/views/main.dart';
+import 'package:code_g/app/widgets/pdf_to_html_converter.dart';
 import 'package:get/get.dart';
 
 import '../modules/auth/bindings/auth_binding.dart';
@@ -38,6 +39,11 @@ class AppPages {
             name: _Paths.CREATEPROJECT,
             page: () => CreateProjectView(),
             binding: CreateProjectBinding(),
+          ),
+          GetPage(
+            name: _Paths.PdfToHtmlConverter,
+            page: () => PdfToHtmlConverter(),
+            // binding: CreateProjectBinding(),
           ),
         ]),
     GetPage(

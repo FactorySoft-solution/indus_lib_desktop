@@ -49,6 +49,9 @@ dependencies:
   desktop_window: ^0.4.2
   image_picker: ^0.8.9
   filesystem_picker: ^4.1.0
+  pdfx: ^2.6.0
+  syncfusion_flutter_pdf: ^24.1.41
+  flutter_html: ^3.0.0-beta.2
 
 dev_dependencies:
   flutter_test:

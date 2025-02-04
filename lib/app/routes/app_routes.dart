@@ -8,6 +8,7 @@ abstract class Routes {
   static const HOME = _Paths.HOME;
   static const MAIN = _Paths.MAIN;
   static const CREATEPROJECT = _Paths.CREATEPROJECT;
+  static const PdfToHtmlConverter = _Paths.PdfToHtmlConverter;
 }
 
 abstract class _Paths {
@@ -17,5 +18,6 @@ abstract class _Paths {
   static const HOME = '/home';
   static const MAIN = '/main';
   static const CREATEPROJECT = '/main/CreateProject';
+  static const PdfToHtmlConverter = '/main/PdfToHtmlConverter';
   static const AUTH = '/auth';
 }
