@@ -95,29 +95,25 @@ class _PdfToHtmlConverterState extends State<PdfToHtmlConverter> {
       // Extract correcteur number
       var correcteurNumber =
           values[0].split("X")[0].replaceAll(RegExp(r'[^0-9]'), '');
-      logger.i({correcter});
       if (values.length < 5) return; // Ensure there are enough values
 
       // Extract X value
       var x = values[0].split("X")[1] + "." + values[1];
 
       // Extract Z Nominal value
-      var ZSerchresult = searchInArray(values, "T.b");
+      var ZSerchresult = searchInArray(values, "Z");
 
       var zIndex = ZSerchresult?["index"];
-      var zArray = ZSerchresult?["value"].split("Z");
-      var zDecimalPartArray = values[zIndex + 1].split("T.s");
-
-      var zNominal = zArray[zArray.length - 1] + '.' + zDecimalPartArray[0];
-
-      // Extract T.b value
+      var zArray = ZSerchresult?["value"];
+      var zPart1Array = zArray.split("Z")[1];
+      var zPart2Array = values[zIndex + 1].split("T.s")[0];
+      var zNominal = zPart1Array + ',' + zPart2Array;
+      logger.i({zPart2Array, zPart1Array, zNominal});
       var result = searchInArray(values, "T.b");
       if (result == null) return; // Skip if "T.b" is not found
-
       var tbArray = result['value'].split("T.b");
       var rayonExist = tbArray[1][1].toString().toLowerCase() != "z";
       var rayon = '-';
-
       if (rayonExist) {
         var rayonPart1 = tbArray[1][1];
         var rayonPart2 = values[result['index'] + 1].split("Z")[0];
