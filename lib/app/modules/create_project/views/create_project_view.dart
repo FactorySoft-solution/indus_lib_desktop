@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:code_g/app/core/values/app_text_styles.dart';
 import 'package:code_g/app/widgets/CustomCard.dart';
 import 'package:code_g/app/widgets/DropdownButtonWidget.dart';
@@ -6,8 +10,11 @@ import 'package:code_g/app/widgets/checkbox_group_widget.dart';
 import 'package:code_g/app/widgets/file_picker_widget.dart';
 import 'package:code_g/app/widgets/image_picker_widget.dart';
 import 'package:code_g/app/widgets/text_input_widget.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:logger/logger.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart';
 
 import '../controllers/create_project_controller.dart';
 
@@ -139,6 +146,23 @@ class CreateProjectView extends GetView<CreateProjectController> {
   }
 
   Widget _buildRightColumn(double width, double height) {
+    final logger = new Logger();
+    final RxString caoStatus = "pending".obs;
+    final RxString faoStatus = "pending".obs;
+    final RxString fileZStatus = "pending".obs;
+    final RxString planStatus = "pending".obs;
+    String _borderColor(controllerName) {
+      final emptyFolder = controller.caoFilePath.text.isEmpty;
+      final emptyController = controllerName.text.isEmpty;
+      var status = "pending";
+      if (!emptyFolder && emptyController) {
+        status = "error";
+      } else if (!emptyFolder && !emptyController) {
+        status = "success";
+      }
+      return status;
+    }
+
     void _handleFolderPicked(Map<String, List<String>>? filesByType) {
       if (filesByType != null) {
         // controller.caoFilePath.text = selectedFile
@@ -151,6 +175,278 @@ class CreateProjectView extends GetView<CreateProjectController> {
         });
       } else {
         print("Folder picker was canceled.");
+      }
+    }
+
+    void _selectFile(selectedFile, controller) {
+      if (selectedFile != null) {
+        if (selectedFile.containsKey("file")) {
+          // Single file selected
+          String filePath = selectedFile["file"]!.first;
+          controller.text = filePath;
+        } else if (selectedFile.containsKey("files")) {
+          // Folder selected
+          List<String> filePaths = selectedFile["files"]!;
+          // Handle multiple files as needed
+          controller.text = filePaths.first; // Example: Take the first file
+        }
+      }
+    }
+
+    void _selectFao(selectedFile) {
+      String filePath = selectedFile["file"]!.first;
+      String fileName = filePath.split('/').last;
+      if ((fileName.endsWith('.arc') || fileName.endsWith('.ARC')) &&
+          !fileName.toLowerCase().contains('pince')) {
+        _selectFile(selectedFile, controller.faoFilePath);
+        faoStatus.value = _borderColor(controller.faoFilePath);
+      } else {
+        // Show an error message or handle the invalid file case
+        print(
+            "Invalid file: File must end with '.arc' and not contain 'pince'.");
+      }
+    }
+
+    void _selectPlan(selectedFile) {
+      String filePath = selectedFile["file"]!.first;
+      String fileName = filePath.split('/').last;
+      if (fileName.toLowerCase().contains("IND") &&
+          fileName.toLowerCase().endsWith('.pdf')) {
+        _selectFile(selectedFile, controller.planFilePath);
+        planStatus.value = _borderColor(controller.planFilePath);
+      } else {
+        // Show an error message or handle the invalid file case
+        print(
+            "Invalid file: File must end with '.arc' and not contain 'pince'.");
+      }
+    }
+
+    String extractedText = "";
+    bool isLoading = false;
+
+    /// Saves text content to a file
+    Future<void> saveTextToFile(String content, String filePath) async {
+      File file = File(filePath);
+      logger.i({content, filePath});
+      await file.writeAsString(content);
+    }
+
+    Map<String, dynamic>? searchInArray(List<String> array, String searchKey) {
+      for (int i = 0; i < array.length; i++) {
+        if (array[i].contains(searchKey)) {
+          return {'value': array[i], 'index': i};
+        }
+      }
+      return null; // Return null if no match is found
+    }
+
+    List<Map<String, dynamic>> processCorrecters(String line) {
+      var correctersList = line.split("Correcteur");
+      final correcters =
+          []; // This list is unused in your original code, so it can be removed
+
+      List<Map<String, dynamic>> resultArray = [];
+
+      correctersList.forEach((correcter) {
+        if (correcter.trim().isEmpty) return; // Skip empty strings
+
+        var data = correcter.split(':');
+        if (data.length < 2) return; // Skip if no ':' is found
+
+        var values = data[1].split(',');
+        // Extract correcteur number
+        var correcteurNumber =
+            values[0].split("X")[0].replaceAll(RegExp(r'[^0-9]'), '');
+        if (values.length < 5) return; // Ensure there are enough values
+
+        // Extract X value
+        var x = values[0].split("X")[1] + "." + values[1];
+
+        // Extract Z Nominal value
+        var ZSerchresult = searchInArray(values, "Z");
+
+        var zIndex = ZSerchresult?["index"];
+        var zArray = ZSerchresult?["value"];
+        var zPart1Array = zArray.split("Z")[1];
+        var zPart2Array = values[zIndex + 1].split("T.s")[0];
+        var zNominal = zPart1Array + ',' + zPart2Array;
+        logger.i({zPart2Array, zPart1Array, zNominal});
+        var result = searchInArray(values, "T.b");
+        if (result == null) return; // Skip if "T.b" is not found
+        var tbArray = result['value'].split("T.b");
+        var rayonExist = tbArray[1][1].toString().toLowerCase() != "z";
+        var rayon = '-';
+        if (rayonExist) {
+          var rayonPart1 = tbArray[1][1];
+          var rayonPart2 = values[result['index'] + 1].split("Z")[0];
+          rayon = rayonPart1 + "," + rayonPart2;
+        }
+
+        // Add to the result list
+        resultArray.add({
+          "correcteur": correcteurNumber,
+          "x": x,
+          "z": zNominal,
+          "r": rayon,
+        });
+      });
+
+      return resultArray; // Return the processed data
+    }
+
+    /// Parses extracted text into structured JSON format
+    Map<String, dynamic> parseExtractedText(String text) {
+      List<Map<String, dynamic>> entries = [];
+      List<String> lines = text.split('\n');
+
+      Map<String, dynamic>? currentEntry;
+
+      for (String line in lines) {
+        if (line.contains("Numéro :")) {
+          if (currentEntry != null) {
+            entries.add(currentEntry);
+          }
+          currentEntry = {
+            "numero": "",
+            "description": line.split("Numéro :")[1].trim(),
+            "details": []
+          };
+        } else if (line.contains("Desc.:")) {
+          currentEntry?["numero"] = line.split("Desc.:")[1].trim();
+        } else if (line
+            .contains("PositionDescriptionQuantitéListe de pièces")) {
+          // Skip header
+        } else if (line.contains("Correcteur")) {
+          var correctersList = line.split("Correcteur");
+          var result = processCorrecters(line);
+          currentEntry?["details"] = result;
+        } else if (RegExp(r"^\d+").hasMatch(line)) {
+          List<String> parts = line.split(RegExp(r"\s{2,}"));
+          if (parts.length >= 2) {
+            currentEntry?["details"].add({
+              "position": parts[0].trim(),
+              "description": parts[1].trim(),
+            });
+          }
+        }
+      }
+
+      if (currentEntry != null) {
+        entries.add(currentEntry);
+      }
+
+      return {"entries": entries};
+    }
+
+    Future<void> pickAndExtractText(path) async {
+      // setState(() {
+      //   isLoading = true;
+      // });
+
+      // FilePickerResult? result = await FilePicker.platform.pickFiles(
+      //   type: FileType.custom,
+      //   allowedExtensions: ['pdf'],
+      // );
+
+      // if (result != null) {
+      // File file = File(result.files.single.path!);
+      File file = File(path!);
+      final Uint8List bytes = await file.readAsBytes();
+      final PdfDocument document = PdfDocument(inputBytes: bytes);
+      String text = PdfTextExtractor(document).extractText();
+      String originalhtmlFilePath =
+          "${file.parent.path}/original_extracted_text.html";
+      await saveTextToFile(text, originalhtmlFilePath);
+
+      // Convert extracted text to HTML format
+      String extractedHtml = text.replaceAll("\n", "<br>");
+
+      // Convert extracted text to structured JSON
+      Map<String, dynamic> structuredJson = parseExtractedText(text);
+
+      // Define file paths
+      String jsonFilePath = "${file.parent.path}/extracted_text.json";
+      String htmlFilePath = "${file.parent.path}/extracted_text.html";
+
+      // Save both HTML and JSON files
+      await saveTextToFile(extractedHtml, htmlFilePath);
+      await saveTextToFile(jsonEncode(structuredJson), jsonFilePath);
+
+      // setState(() {
+      extractedText = extractedHtml; // Store HTML in state
+      //   isLoading = false;
+      // });
+      // } else {
+      // setState(() {
+      //   isLoading = false;
+      // });
+      // }
+    }
+
+    void _selectFileZ(selectedFile) {
+      String filePath = selectedFile["file"]!.first;
+      String fileName = filePath.split('/').last;
+      // if (
+      //   fileName.toLowerCase().contains('fiche z') &&
+      //     fileName.toLowerCase().endsWith('.pdf')) {
+      logger.e("test");
+      // _selectFile(selectedFile, controller.fileZPath);
+      pickAndExtractText(filePath);
+      // fileZStatus.value = _borderColor(controller.fileZPath);
+      // } else {
+      //   // Show an error message or handle the invalid file case
+      //   print(
+      //       "Invalid file: File must end with '.arc' and not contain 'pince'.");
+      // }
+    }
+
+    void _selectFilesFromFolder(
+        Map<String, List<String>>? selectedFolderFiles) {
+      if (selectedFolderFiles != null &&
+          selectedFolderFiles.containsKey("files")) {
+        // Save the root folder path (first directory in the list)
+        if (controller.caoFilePath.text.isEmpty) {
+          String rootFolderPath = selectedFolderFiles["files"]!.first;
+          if (FileSystemEntity.isDirectorySync(rootFolderPath)) {
+            controller.caoFilePath.text = rootFolderPath;
+            caoStatus.value = _borderColor(controller.planFilePath);
+          }
+        }
+
+        List<String> filePaths = selectedFolderFiles["files"]!;
+
+        // Iterate through all files in the folder
+        for (String filePath in filePaths) {
+          if (controller.faoFilePath.text.isEmpty) {
+            _selectFao(filePath);
+          }
+          if (controller.fileZPath.text.isEmpty) {
+            _selectFileZ(filePath);
+          }
+          if (controller.planFilePath.text.isEmpty) {
+            _selectPlan(filePath);
+          }
+        }
+
+        // Recursively check subfolders
+        // for (String filePath in filePaths) {
+        //   if (FileSystemEntity.isDirectorySync(filePath)) {
+        //     // If it's a directory, list its contents and check recursively
+        //     List<FileSystemEntity> subFolderFiles =
+        //         Directory(filePath).listSync();
+        //     List<String> subFolderFilePaths =
+        //         subFolderFiles.map((entity) => entity.path).toList();
+
+        //     // Call _selectFilesFromFolder recursively for subfolders
+        //     _selectFilesFromFolder({"files": subFolderFilePaths});
+        //   }
+        // }
+        // logger.i({
+        //   "caoFilePath == ": controller.caoFilePath,
+        //   "fao == ": controller.faoFilePath,
+        //   "Z file == ": controller.fileZPath,
+        //   "plan == ": controller.planFilePath,
+        // });
       }
     }
 
@@ -201,34 +497,30 @@ class CreateProjectView extends GetView<CreateProjectController> {
           controller: controller.specification,
         ),
         // select files
+
         Row(
           children: [
             FilePickerWidget(
-                buttonText: "CAO*",
-                //   onPick: (selectedFile) {
-                //     if (selectedFile != null) {
-                // controller.caoFilePath.text = selectedFile;
-                //     }
-                //   },
-                onPick: _handleFolderPicked),
+              status: caoStatus.value,
+              type: "folder",
+              buttonText: "CAO*",
+              onPick: _selectFilesFromFolder,
+            ),
             FilePickerWidget(
-                buttonText: "FAO*",
-                // onPick: (selectedFile) {
-                //   if (selectedFile != null) {
-                //     controller.faoFilePath.text = selectedFile;
-                //   }
-                // },
-                onPick: _handleFolderPicked),
+              status: faoStatus.value,
+              buttonText: "FAO*",
+              onPick: _selectFao,
+            ),
             FilePickerWidget(
-                type: 'folder',
-                buttonText: "File Z*",
-                // onPick: (selectedFile) {
-                //   if (selectedFile != null) {
-                //     controller.fileZPath.text = selectedFile;
-                //   }
-                // },
-                onPick: _handleFolderPicked),
-            FilePickerWidget(buttonText: "Plan*", onPick: _handleFolderPicked),
+              status: fileZStatus.value,
+              buttonText: "File Z*",
+              onPick: _selectFileZ,
+            ),
+            FilePickerWidget(
+              status: planStatus.value,
+              buttonText: "Plan*",
+              onPick: _selectPlan,
+            ),
           ],
         ),
 

@@ -5,6 +5,7 @@ class AppColors {
   static const Color transparent =
       Colors.transparent; // Built-in transparent color
   static const Color darkColor = Colors.black;
+  static const Color errorColor = Color.fromARGB(255, 197, 22, 9);
   static const Color ligthColor = Colors.white;
   static const Color primaryColor = Color(0xFF123456);
   static const Color secondaryColor = Color(0xFF654321);

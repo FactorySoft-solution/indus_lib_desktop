@@ -28,8 +28,8 @@ class MainView extends GetView<HomeController> {
                 // decoration: BoxDecoration(color: Colors.black45),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
-                  // child: CreateProjectView(),
-                  child: PdfToHtmlConverter(),
+                  child: CreateProjectView(),
+                  // child: PdfToHtmlConverter(),
                 ),
               ),
             ],
