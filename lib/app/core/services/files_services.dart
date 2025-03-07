@@ -1,6 +1,15 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
+import 'package:logger/logger.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart';
+
+import 'shared_service.dart';
 
 class FilesServices {
+  Logger logger = new Logger();
 // Function to ensure a directory exists
   Future<Directory> ensureDirectory(String path) async {
     Directory directory = Directory(path);
@@ -96,14 +105,6 @@ class FilesServices {
 
     if (directory.existsSync()) {
       List<FileSystemEntity> entities = directory.listSync();
-
-      for (var entity in entities) {
-        if (entity is File) {
-          print("File: ${entity.path}");
-        } else if (entity is Directory) {
-          print("Directory: ${entity.path}");
-        }
-      }
       return entities;
     } else {
       print("Directory does not exist");
@@ -151,18 +152,179 @@ class FilesServices {
     Map<String, List<String>> filesByType = {};
 
     for (var filePath in filePaths) {
-      // Get the file extension
-      String extension = filePath.split('.').last.toLowerCase();
+      if (!FileSystemEntity.isDirectorySync(filePath)) {
+        // Get the file extension
+        String extension = filePath.split('.').last.toLowerCase();
 
-      // Initialize the list if the extension is not already in the map
-      if (!filesByType.containsKey(extension)) {
-        filesByType[extension] = [];
+        // Initialize the list if the extension is not already in the map
+        if (!filesByType.containsKey(extension)) {
+          filesByType[extension] = [];
+        }
+        // Add the file path to the corresponding extension list
+        filesByType[extension]!.add(filePath);
+      } else {
+        // Initialize the list if the extension is not already in the map
+        if (!filesByType.containsKey("dir")) {
+          filesByType["dir"] = [];
+        }
+        // Add the file path to the corresponding extension list
+        filesByType["dir"]!.add(filePath);
       }
-
-      // Add the file path to the corresponding extension list
-      filesByType[extension]!.add(filePath);
     }
 
     return filesByType;
+  }
+
+  Future<FilePickerResult?> pickPdf() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
+    return result;
+  }
+
+  Future<String> pickAndExtractPdfToHtml() async {
+    FilePickerResult? result = await pickPdf();
+    String extractedHtml = "";
+    if (result != null) {
+      extractedHtml = await ExtractPdfToHtml(result.files.single.path!);
+    }
+    return extractedHtml;
+  }
+
+  Future<String> ExtractPdfToHtml(String path) async {
+    File file = File(path);
+    final Uint8List bytes = await file.readAsBytes();
+    final PdfDocument document = PdfDocument(inputBytes: bytes);
+    String text = PdfTextExtractor(document).extractText();
+    // Convert extracted text to HTML format
+    String extractedHtml = text.replaceAll("\n", "<br>");
+    return extractedHtml;
+  }
+
+  List<Map<String, dynamic>> FileZProcessCorrecters(String line) {
+    SharedService sharedService = new SharedService();
+    var correctersList = line.split("Correcteur");
+
+    List<Map<String, dynamic>> resultArray = [];
+    correctersList.forEach((correcter) {
+      if (correcter.trim().isEmpty) return; // Skip empty strings
+
+      var data = correcter.split(':');
+      if (data.length < 2) return; // Skip if no ':' is found
+
+      var values = data[1].split(',');
+
+      // Extract correcteur number
+      var correcteurNumber =
+          values[0].split("X")[0].replaceAll(RegExp(r'[^0-9]'), '');
+      // if (values.length < 5) return; // Ensure there are enough values
+
+      // Extract X value
+      var x = values[0].split("X")[1] + "," + values[1];
+
+      // Extract Z Nominal value
+      var ZSerchresult = sharedService.searchInArray(values, "Z");
+
+      var zIndex = ZSerchresult?["index"];
+      var zArray = ZSerchresult?["value"];
+      var zPart1Array = zArray.split("Z")[1];
+      var zPart2Array =
+          values[zIndex + 1].split("T.s")[0].replaceAll(RegExp(r'[^0-9]'), '');
+      var zNominal = zPart1Array + ',' + zPart2Array;
+      var result = sharedService.searchInArray(values, "T.b");
+      var rayon = '-';
+
+      if (result == null) {
+        x = values[0].split("X")[1] + "," + zArray[1];
+      } else {
+        var tbArray = result['value'].split("T.b");
+        bool containZ = result['value'].toString().toLowerCase().contains('z');
+        var rayonExist = !containZ;
+        if (rayonExist) {
+          var rayonPart1 = tbArray[1].replaceAll(RegExp(r'[^0-9]'), '');
+          var rayonPart2 = values[result['index'] + 1].split("Z")[0];
+          rayon = rayonPart1 + "," + rayonPart2;
+        }
+      }
+
+      // Add to the result list
+      resultArray.add({
+        "correcteur": correcteurNumber,
+        "x": x,
+        "z": zNominal,
+        "r": rayon,
+      });
+    });
+
+    return resultArray; // Return the processed data
+  }
+
+  /// Saves content to a file
+  Future<void> saveContentToFile(
+    dynamic content,
+    String filePath,
+    String fileName,
+    String extention,
+  ) async {
+    String path = "${filePath}/${fileName}.${extention}";
+    File file = File(path);
+    await file.writeAsString(jsonEncode(content));
+  }
+
+  /// Parses extracted text into structured JSON format
+  Map<String, dynamic> parseExtractedFileZText(String text) {
+    List<Map<String, dynamic>> entries = [];
+    List<String> lines = text.split('<br>');
+
+    Map<String, dynamic>? currentEntry;
+
+    for (String line in lines) {
+      if (line.contains("Numéro :")) {
+        if (currentEntry != null) {
+          entries.add(currentEntry);
+        }
+        currentEntry = {
+          "numero": "",
+          "description": line.split("Numéro :")[1].trim(),
+          "details": []
+        };
+      } else if (line.contains("Desc.:")) {
+        currentEntry?["numero"] = line.split("Desc.:")[1].trim();
+      } else if (line.contains("PositionDescriptionQuantitéListe de pièces")) {
+        // Skip header
+      } else if (line.contains("Correcteur")) {
+        // logger.e({
+        //   "line": line,
+        // });
+        var result = FileZProcessCorrecters(line);
+        currentEntry?["details"] = result;
+      } else if (RegExp(r"^\d+").hasMatch(line)) {
+        List<String> parts = line.split(RegExp(r"\s{2,}"));
+        if (parts.length >= 2) {
+          currentEntry?["details"].add({
+            "position": parts[0].trim(),
+            "description": parts[1].trim(),
+          });
+        }
+      }
+    }
+
+    if (currentEntry != null) {
+      entries.add(currentEntry);
+    }
+
+    return {"entries": entries};
+  }
+
+  Future<Map<String, dynamic>> convertFileZHtmlToJson(path) async {
+    // Convert extracted HTML format
+    String extractedHtml = await ExtractPdfToHtml(path);
+    // Convert extracted text to structured JSON
+    Map<String, dynamic> structuredJson =
+        parseExtractedFileZText(extractedHtml);
+    final fileName = path.toString().split('\\').last.split('.').first;
+    structuredJson['fileName'] = fileName;
+    return structuredJson;
   }
 }

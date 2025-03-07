@@ -4,12 +4,13 @@ import 'package:code_g/app/widgets/pdf_to_html_converter.dart';
 import 'package:code_g/app/widgets/sidebar.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:logger/logger.dart';
 
 import '../controllers/home_controller.dart';
 
 class MainView extends GetView<HomeController> {
-  const MainView({super.key});
-
+  MainView({super.key});
+  final logger = new Logger();
   @override
   Widget build(BuildContext context) {
     final pageWidth = MediaQuery.of(context).size.width;
@@ -28,8 +29,17 @@ class MainView extends GetView<HomeController> {
                 // decoration: BoxDecoration(color: Colors.black45),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: CreateProjectView(),
-                  // child: PdfToHtmlConverter(),
+                  child: Obx(
+                    () {
+                      logger.i(controller.activePage.value);
+                      switch (controller.activePage.value) {
+                        case 'Formes de pièces':
+                          return CreateProjectView();
+                        default:
+                          return PdfToHtmlConverter();
+                      }
+                    },
+                  ),
                 ),
               ),
             ],

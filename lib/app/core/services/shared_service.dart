@@ -31,4 +31,13 @@ class SharedService {
       throw Exception('Error loading JSON from URL: $e');
     }
   }
+
+  Map<String, dynamic>? searchInArray(List<String> array, String searchKey) {
+    for (int i = 0; i < array.length; i++) {
+      if (array[i].contains(searchKey)) {
+        return {'value': array[i], 'index': i};
+      }
+    }
+    return null; // Return null if no match is found
+  }
 }

@@ -1,12 +1,12 @@
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:flutter/material.dart';
+
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_html/flutter_html.dart';
 import 'package:logger/logger.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
-import 'package:flutter_html/flutter_html.dart';
 
 class PdfToHtmlConverter extends StatefulWidget {
   @override
@@ -80,9 +80,6 @@ class _PdfToHtmlConverterState extends State<PdfToHtmlConverter> {
 
   List<Map<String, dynamic>> processCorrecters(String line) {
     var correctersList = line.split("Correcteur");
-    final correcters =
-        []; // This list is unused in your original code, so it can be removed
-
     List<Map<String, dynamic>> resultArray = [];
 
     correctersList.forEach((correcter) {
@@ -154,7 +151,6 @@ class _PdfToHtmlConverterState extends State<PdfToHtmlConverter> {
       } else if (line.contains("PositionDescriptionQuantitéListe de pièces")) {
         // Skip header
       } else if (line.contains("Correcteur")) {
-        var correctersList = line.split("Correcteur");
         var result = processCorrecters(line);
         currentEntry?["details"] = result;
       } else if (RegExp(r"^\d+").hasMatch(line)) {

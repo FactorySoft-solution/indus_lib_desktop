@@ -40,7 +40,6 @@ class FilePickerWidget extends StatelessWidget {
       Map<String, List<String>> fileMap = {
         "file": [filePath],
       };
-      // logger.f(filePath);
       onPick(fileMap);
     } else {
       onPick(null); // Notify the parent that the operation was canceled
@@ -61,6 +60,8 @@ class FilePickerWidget extends StatelessWidget {
 
       Map<String, List<String>> filesByType =
           filesServices.regroupFilesByType(filePaths);
+
+      filesByType['mainDir'] = [selectedDirectory];
       onPick(filesByType);
     } else {
       // User canceled the picker
