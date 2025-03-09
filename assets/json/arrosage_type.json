@@ -1,0 +1,23 @@
+{
+  "titre": "arrosage types",
+  "contenu": [
+    {
+      "name": "Jet"
+    },
+    {
+      "name": "Jet + Haute pression"
+    },
+    {
+      "name": "Jet + Centre + Haute pression"
+    },
+    {
+      "name": "Brouillard"
+    },
+    {
+      "name": "Jet + Brouillard"
+    },
+    {
+      "name": "Jet + Centre + Brouillard"
+    }
+  ]
+}

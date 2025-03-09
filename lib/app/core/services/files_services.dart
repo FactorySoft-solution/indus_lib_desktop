@@ -10,6 +10,7 @@ import 'shared_service.dart';
 
 class FilesServices {
   Logger logger = new Logger();
+  SharedService sharedService = new SharedService();
 // Function to ensure a directory exists
   Future<Directory> ensureDirectory(String path) async {
     Directory directory = Directory(path);
@@ -286,6 +287,7 @@ class FilesServices {
         }
         currentEntry = {
           "numero": "",
+          "operation": "-",
           "description": line.split("Numéro :")[1].trim(),
           "details": []
         };
@@ -294,9 +296,6 @@ class FilesServices {
       } else if (line.contains("PositionDescriptionQuantitéListe de pièces")) {
         // Skip header
       } else if (line.contains("Correcteur")) {
-        // logger.e({
-        //   "line": line,
-        // });
         var result = FileZProcessCorrecters(line);
         currentEntry?["details"] = result;
       } else if (RegExp(r"^\d+").hasMatch(line)) {
@@ -307,6 +306,14 @@ class FilesServices {
             "description": parts[1].trim(),
           });
         }
+      } else if (sharedService.stringStartsWithDAndNumber(line)) {
+        var operation = line;
+        if (line.contains(":")) {
+          operation = operation.substring(0, operation.length - 3);
+        } else {
+          operation = operation.substring(0, operation.length - 2);
+        }
+        currentEntry?["operation"] = operation;
       }
     }
 

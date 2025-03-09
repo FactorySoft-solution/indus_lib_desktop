@@ -1,6 +1,8 @@
+import 'dart:convert';
+
 import 'package:code_g/app/core/services/files_services.dart';
 import 'package:code_g/app/core/services/shared_service.dart';
-import 'package:file_picker/file_picker.dart';
+// import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
@@ -10,11 +12,8 @@ import 'package:path/path.dart' as path;
 class CreateProjectController extends GetxController {
   final Logger logger = new Logger();
   final SharedService sharedService = SharedService();
+  final FilesServices filesServices = new FilesServices();
 
-  // var imagePlanPdf = Rxn<File>();
-  // var dossProgFolder = Rxn<String>();
-  // var programmeFile = Rxn<File>();
-  // var ficheUtilPdf = Rxn<File>();
   final pieceRef = TextEditingController();
   final pieceIndice = TextEditingController();
   final machine = TextEditingController();
@@ -30,50 +29,26 @@ class CreateProjectController extends GetxController {
   final organeBP = TextEditingController();
   final organeCB = TextEditingController();
   final selectedItemsController = TextEditingController();
-  // String? selectedFile;
-  final caoFilePath = TextEditingController(); // Add this
-  final faoFilePath = TextEditingController(); // Add this
-  final fileZPath = TextEditingController(); // Add this
-  final planFilePath = TextEditingController(); // Add this
+  final caoFilePath = TextEditingController();
+  final faoFilePath = TextEditingController();
+  final fileZPath = TextEditingController();
+  final planFilePath = TextEditingController();
+  final topSolideOperation = TextEditingController();
+  final operationName = TextEditingController();
+  final displayOperation = TextEditingController();
+  final arrosageType = TextEditingController();
 
   final RxString caoStatus = "pending".obs;
   final RxString faoStatus = "pending".obs;
   final RxString fileZStatus = "pending".obs;
+  final RxList fileZJsonData = [].obs;
   final RxString planStatus = "pending".obs;
   @override
   void onInit() {
     super.onInit();
   }
 
-  // Future<void> pickFile(String type) async {
-  //   FilePickerResult? result;
-  //   if (type == 'pdf') {
-  //     result = await FilePicker.platform
-  //         .pickFiles(type: FileType.custom, allowedExtensions: ['pdf']);
-  //   } else if (type == 'folder') {
-  //     result =
-  //         await FilePicker.platform.getDirectoryPath() as FilePickerResult?;
-  //   } else {
-  //     result = await FilePicker.platform.pickFiles();
-  //   }
-
-  //   if (result != null) {
-  //     switch (type) {
-  //       case 'pdf':
-  //         if (result.files.isNotEmpty) {
-  //           imagePlanPdf.value = File(result.files.single.path!);
-  //         }
-  //         break;
-  //       case 'folder':
-  //         dossProgFolder.value = result.files.single.path!;
-  //         break;
-  //       default:
-  //         programmeFile.value = File(result.files.single.path!);
-  //     }
-  //   }
-  // }
-
-  Future<List<dynamic>> extractIndicesJsonDate() async {
+  Future<List<dynamic>> extractIndicesJsonData() async {
     try {
       final Map<String, dynamic> fetchedJsonData = await sharedService
           .loadJsonFromAssets('assets/json/indicePIECE.json');
@@ -87,7 +62,7 @@ class CreateProjectController extends GetxController {
     }
   }
 
-  Future<List<dynamic>> extractMachineJsonDate() async {
+  Future<List<dynamic>> extractMachineJsonData() async {
     try {
       final Map<String, dynamic> fetchedJsonData = await sharedService
           .loadJsonFromAssets('assets/json/listeMACHINE.json');
@@ -99,7 +74,7 @@ class CreateProjectController extends GetxController {
     }
   }
 
-  Future<List<dynamic>> extractMechoireJsonDate() async {
+  Future<List<dynamic>> extractMechoireJsonData() async {
     try {
       final Map<String, dynamic> fetchedJsonData = await sharedService
           .loadJsonFromAssets('assets/json/machoireEJECTION.json');
@@ -111,7 +86,7 @@ class CreateProjectController extends GetxController {
     }
   }
 
-  Future<List<dynamic>> extractProgrammersJsonDate() async {
+  Future<List<dynamic>> extractProgrammersJsonData() async {
     try {
       final Map<String, dynamic> fetchedJsonData = await sharedService
           .loadJsonFromAssets('assets/json/listePROGRAMMEUR.json');
@@ -123,11 +98,67 @@ class CreateProjectController extends GetxController {
     }
   }
 
-  List<String> jsonValuesAsList(jsonData) {
-    return jsonData.values.map((e) => e.toString()).toList();
+  Future<List<dynamic>> extractArrosageTypesJsonData() async {
+    try {
+      final Map<String, dynamic> fetchedJsonData = await sharedService
+          .loadJsonFromAssets('assets/json/arrosage_type.json');
+
+      var newData = [...fetchedJsonData["contenu"]];
+      return newData;
+    } catch (e) {
+      print('Error: $e');
+      return [];
+    }
   }
 
-  final FilesServices filesServices = new FilesServices();
+  Future<List<dynamic>> extractTopSolideOperationsJsonData() async {
+    try {
+      final Map<String, dynamic> fetchedJsonData = await sharedService
+          .loadJsonFromAssets('assets/json/topSolide_operations.json');
+      var newData = [...fetchedJsonData["contenu"]];
+      return newData;
+    } catch (e) {
+      print('Error: $e');
+      return [];
+    }
+  }
+
+  Future<List<dynamic>> extractOperationsData() async {
+    try {
+      var newData =
+          sharedService.extractAllOperations(fileZJsonData.value, "operation");
+      return newData;
+    } catch (e) {
+      print('Error: $e');
+      return [];
+    }
+  }
+
+  updateDisplayOperation(String value) {
+    if (value.isEmpty) {
+      final data = fileZJsonData
+          .where((element) => element["operation"] == operationName.text)
+          .toList();
+      if (data.isNotEmpty) {
+        // Access description from the filtered result
+        final description = data[0]["description"];
+        displayOperation.text = description;
+      } else {
+        logger.i("No matching operation found");
+      }
+    } else {
+      final data = fileZJsonData
+          .where((element) => element["operation"] == value)
+          .toList();
+      if (data.isNotEmpty) {
+        // Access description from the filtered result
+        final description = data[0]["description"];
+        displayOperation.text = description;
+      } else {
+        logger.i("No matching operation found");
+      }
+    }
+  }
 
   String _borderColor(controllerName) {
     final emptyFolder = caoFilePath.text.isEmpty;
@@ -224,7 +255,6 @@ class CreateProjectController extends GetxController {
           update();
         }
       }
-      // Iterate through all files in the folder
       if (selectedFolderFiles.containsKey("arc")) {
         var arcData = selectedFolderFiles['arc'];
         if (arcData is List) {
@@ -257,6 +287,7 @@ class CreateProjectController extends GetxController {
           print("Error: 'pdf' is not a list!");
         }
       }
+      // Iterate through all files in the folder
       if (selectedFolderFiles.containsKey("dir")) {
         var dirData = selectedFolderFiles['dir'];
         if (dirData is List) {
@@ -280,6 +311,8 @@ class CreateProjectController extends GetxController {
     String directory = path.dirname(filePath);
     Map<String, dynamic> structuredJson =
         await filesServices.convertFileZHtmlToJson(filePath);
+    fileZJsonData.value = List<dynamic>.from(structuredJson["entries"]);
+
     await filesServices.saveContentToFile(
         structuredJson, directory, fileName.split(".")[0], "json");
   }

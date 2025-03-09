@@ -76,8 +76,8 @@ class SidebarWidget extends StatelessWidget {
                             children: [
                               const SizedBox(height: 15),
                               Obx(() {
-                                final isActive =
-                                    controller.activePage.value == item['text'];
+                                final isActive = controller.activePage.value
+                                    .contains(item['text']);
                                 return ClickableWidget(
                                   onTap: () {
                                     controller.updateActivePage(

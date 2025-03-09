@@ -105,7 +105,6 @@ class _PdfToHtmlConverterState extends State<PdfToHtmlConverter> {
       var zPart1Array = zArray.split("Z")[1];
       var zPart2Array = values[zIndex + 1].split("T.s")[0];
       var zNominal = zPart1Array + ',' + zPart2Array;
-      logger.i({zPart2Array, zPart1Array, zNominal});
       var result = searchInArray(values, "T.b");
       if (result == null) return; // Skip if "T.b" is not found
       var tbArray = result['value'].split("T.b");

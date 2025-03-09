@@ -1,10 +1,12 @@
 import 'package:code_g/app/core/values/app_text_styles.dart';
+import 'package:code_g/app/modules/home/controllers/home_controller.dart';
 import 'package:code_g/app/widgets/CustomCard.dart';
 import 'package:code_g/app/widgets/DropdownButtonWidget.dart';
 import 'package:code_g/app/widgets/button.dart';
 import 'package:code_g/app/widgets/checkbox_group_widget.dart';
 import 'package:code_g/app/widgets/file_picker_widget.dart';
 import 'package:code_g/app/widgets/image_picker_widget.dart';
+import 'package:code_g/app/widgets/jsonDropDown.dart';
 import 'package:code_g/app/widgets/text_input_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -13,7 +15,8 @@ import 'package:logger/logger.dart';
 import '../controllers/create_project_controller.dart';
 
 class CreateProjectView extends GetView<CreateProjectController> {
-  const CreateProjectView({super.key});
+  CreateProjectView({super.key});
+  final HomeController homeController = Get.put(HomeController());
 
   @override
   Widget build(BuildContext context) {
@@ -65,20 +68,20 @@ class CreateProjectView extends GetView<CreateProjectController> {
           hint: 'Ajouter refº pièce',
           controller: controller.pieceRef,
         ),
-        _buildDropdown(
+        JsonDropDown(
           label: "Indice Piece",
           hint: "Select Indice Piece",
           controller: controller.pieceIndice,
-          future: controller.extractIndicesJsonDate(),
+          future: controller.extractIndicesJsonData(),
           keyExtractor: (item) => item["indice"],
           width: width,
           height: height,
         ),
-        _buildDropdown(
+        JsonDropDown(
           label: "Machine *",
           hint: "Selectionner une machine",
           controller: controller.machine,
-          future: controller.extractMachineJsonDate(),
+          future: controller.extractMachineJsonData(),
           keyExtractor: (item) => item["nom"],
           width: width,
           height: height,
@@ -90,11 +93,11 @@ class CreateProjectView extends GetView<CreateProjectController> {
           hint: 'Choisir l’epaisseur de pièce',
           controller: controller.pieceDiametre,
         ),
-        _buildDropdown(
+        JsonDropDown(
           label: "Type du mâchoire éjection *",
           hint: "Choisir le type du mâchoire",
           controller: controller.pieceEjection,
-          future: controller.extractMechoireJsonDate(),
+          future: controller.extractMechoireJsonData(),
           keyExtractor: (item) => item["type"],
           width: width,
           height: height,
@@ -153,10 +156,6 @@ class CreateProjectView extends GetView<CreateProjectController> {
         'faoStatus': controller.faoStatus.value,
         'fileZStatus': controller.fileZStatus.value,
         'planStatus': controller.planStatus.value,
-        // 'imagePlanPdf': controller.imagePlanPdf.value,
-        // 'dossProgFolder': controller.dossProgFolder.value,
-        // 'programmeFile': controller.programmeFile.value,
-        // 'ficheUtilPdf': controller.ficheUtilPdf.value,
         'pieceRef': controller.pieceRef.text,
         'pieceIndice': controller.pieceIndice.text,
         'machine': controller.machine.text,
@@ -173,6 +172,7 @@ class CreateProjectView extends GetView<CreateProjectController> {
         'organeCB': controller.organeCB.text,
         'selectedItemsController': controller.selectedItemsController.text,
       });
+      homeController.activePage.value = "Formes de pièces/resume-project";
 
       controller.update();
     }
@@ -200,11 +200,11 @@ class CreateProjectView extends GetView<CreateProjectController> {
           hint: 'Ajouter l’image de la pièce',
           controller: controller.form,
         ),
-        _buildDropdown(
+        JsonDropDown(
           label: "Programmeur *",
           hint: "Saisir le programmeur de la pièce",
           controller: controller.programmeur,
-          future: controller.extractProgrammersJsonDate(),
+          future: controller.extractProgrammersJsonData(),
           keyExtractor: (item) => item["nom"],
           width: width,
           height: height,
@@ -257,42 +257,6 @@ class CreateProjectView extends GetView<CreateProjectController> {
         ),
         CustomButton(text: 'Ajouter le pièce', onPressed: nextStep),
       ],
-    );
-  }
-
-  Widget _buildDropdown({
-    required String label,
-    required String hint,
-    required TextEditingController controller,
-    required Future<List<dynamic>> future,
-    required String Function(dynamic) keyExtractor,
-    required double width,
-    required double height,
-  }) {
-    return FutureBuilder<List<dynamic>>(
-      future: future,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const CircularProgressIndicator();
-        } else if (snapshot.hasError) {
-          return Text('Error: ${snapshot.error}');
-        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Text('No data available');
-        }
-
-        final value = controller.text;
-        final items = snapshot.data!.map(keyExtractor).toList();
-
-        return CustomDropdown(
-          controller: controller,
-          value: value.isEmpty ? null : value,
-          items: items,
-          label: label,
-          hint: value.isEmpty ? hint : value,
-          width: width,
-          height: height,
-        );
-      },
     );
   }
 }

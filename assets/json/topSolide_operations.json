@@ -1,0 +1,41 @@
+{
+  "titre": "tope solide operations",
+  "contenu": [
+    {
+      "name": "Tournage / Contournage"
+    },
+    {
+      "name": "Tournage / Ébauche"
+    },
+    {
+      "name": "Tournage / Perçage"
+    },
+    {
+      "name": "Tournage / Filetage"
+    },
+    {
+      "name": "Tournage / Contournage 3D"
+    },
+    {
+      "name": "Tournage / Copiage"
+    },
+    {
+      "name": "Tournage / Taraudage"
+    },
+    {
+      "name": "Filetage / Contournage"
+    },
+    {
+      "name": "Filetage / Contournage hélicoïdal"
+    },
+    {
+      "name": "Filetage / Perçage"
+    },
+    {
+      "name": "Filetage / Copiage"
+    },
+    {
+      "name": "Filetage / Contournage 3D"
+    }
+  ]
+}
