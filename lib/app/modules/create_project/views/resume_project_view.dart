@@ -1,3 +1,4 @@
+import 'package:code_g/app/core/services/files_services.dart';
 import 'package:code_g/app/core/values/app_text_styles.dart';
 import 'package:code_g/app/widgets/CustomCard.dart';
 import 'package:code_g/app/widgets/DropdownButtonWidget.dart';
@@ -10,12 +11,23 @@ import 'package:code_g/app/widgets/text_input_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
+import 'dart:io';
 
 import '../controllers/create_project_controller.dart';
 
 class ResumeProjectView extends GetView<CreateProjectController> {
   ResumeProjectView({super.key});
   Logger logger = Logger();
+  final filesServices = new FilesServices();
+  void handleSubmit() {
+    if (controller.areFirstPartFieldsFilled() &&
+        controller.areSecandPartFieldsFilled()) {
+      controller.copySelectedFolder();
+    } else {
+      print("Please fill all fields before submitting.");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final pageWidth = MediaQuery.of(context).size.width;
@@ -106,7 +118,7 @@ class ResumeProjectView extends GetView<CreateProjectController> {
                           ),
                           const SizedBox(width: 10),
                           JsonDropDown(
-                            label: "Ajouter un type pour l’operation *",
+                            label: "Ajouter un type pour l'operation *",
                             hint:
                                 "Choisir une opération puis Sélectionner un type de la liste TopSolid",
                             controller: controller.topSolideOperation,
@@ -124,14 +136,14 @@ class ResumeProjectView extends GetView<CreateProjectController> {
                           height: inputHeight,
                           label: '',
                           hint:
-                              'Choisir une opération pour l’Affichage de l’Outil',
+                              'Choisir une opération pour l\'Affichage de l\'Outil',
                           controller: controller.displayOperation,
                         ),
                         const SizedBox(width: 10),
                         JsonDropDown(
-                          label: "Ajouter l’arrosage *",
+                          label: "Ajouter l\'arrosage *",
                           hint:
-                              "Choisir une opération puis Sélectionner un arrosage pour l’outil",
+                              "Choisir une opération puis Sélectionner un arrosage pour l\'outil",
                           controller: controller.arrosageType,
                           future: controller.extractArrosageTypesJsonData(),
                           keyExtractor: (item) => item["name"],
@@ -139,6 +151,30 @@ class ResumeProjectView extends GetView<CreateProjectController> {
                           height: inputHeight,
                         ),
                       ])
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      // Display image from controller.form
+                      controller.form.text.isNotEmpty
+                          ? Container(
+                              width: 500,
+                              height: 200,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Image.file(
+                                File(controller.form.text),
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                      CustomButton(
+                          text: 'Ajouter le pièce', onPressed: handleSubmit),
                     ],
                   ),
                 ],

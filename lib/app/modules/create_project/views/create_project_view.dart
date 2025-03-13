@@ -143,36 +143,10 @@ class CreateProjectView extends GetView<CreateProjectController> {
   }
 
   Widget _buildRightColumn(double width, double height) {
-    final logger = new Logger();
-
     void nextStep() {
-      logger.i({
-        'caoFilePath': controller.caoFilePath.text,
-        'faoFilePath': controller.faoFilePath.text,
-        'fileZPath': controller.fileZPath.text,
-        'planFilePath': controller.planFilePath.text,
-        'controller.caoFilePath.text.isNotEmpty':
-            controller.caoFilePath.text.isNotEmpty,
-        'faoStatus': controller.faoStatus.value,
-        'fileZStatus': controller.fileZStatus.value,
-        'planStatus': controller.planStatus.value,
-        'pieceRef': controller.pieceRef.text,
-        'pieceIndice': controller.pieceIndice.text,
-        'machine': controller.machine.text,
-        'pieceDiametre': controller.pieceDiametre.text,
-        'pieceEjection': controller.pieceEjection.text,
-        'pieceName': controller.pieceName.text,
-        'epaisseur': controller.epaisseur.text,
-        'materiel': controller.materiel.text,
-        'form': controller.form.text,
-        'programmeur': controller.programmeur.text,
-        'regieur': controller.regieur.text,
-        'specification': controller.specification.text,
-        'organeBP': controller.organeBP.text,
-        'organeCB': controller.organeCB.text,
-        'selectedItemsController': controller.selectedItemsController.text,
-      });
-      homeController.activePage.value = "Formes de pièces/resume-project";
+      if (controller.areFirstPartFieldsFilled()) {
+        homeController.activePage.value = "Formes de pièces/resume-project";
+      }
 
       controller.update();
     }

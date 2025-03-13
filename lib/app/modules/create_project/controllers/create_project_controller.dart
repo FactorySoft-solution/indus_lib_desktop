@@ -43,6 +43,54 @@ class CreateProjectController extends GetxController {
   final RxString fileZStatus = "pending".obs;
   final RxList fileZJsonData = [].obs;
   final RxString planStatus = "pending".obs;
+
+  // Method to check if all TextEditingController fields are filled
+  bool checkFilledFields(fields) {
+    bool isAllFieldsFilled = true;
+    fields.forEach((name, controller) {
+      if (controller.text.isEmpty) {
+        print("Missing field: $name");
+        isAllFieldsFilled = false;
+      }
+    });
+    return isAllFieldsFilled;
+  }
+
+  bool areFirstPartFieldsFilled() {
+    final fields = {
+      'Piece Reference': pieceRef,
+      'Piece Indice': pieceIndice,
+      'Machine': machine,
+      'Piece Diametre': pieceDiametre,
+      'Piece Ejection': pieceEjection,
+      'Piece Name': pieceName,
+      'Epaisseur': epaisseur,
+      'Materiel': materiel,
+      'Form': form,
+      'Programmeur': programmeur,
+      'Regieur': regieur,
+      'Specification': specification,
+      'Organe BP': organeBP,
+      'Organe CB': organeCB,
+      'Selected Items': selectedItemsController,
+      'CAO File Path': caoFilePath,
+      'FAO File Path': faoFilePath,
+      'File Z Path': fileZPath,
+      'Plan File Path': planFilePath,
+    };
+    return checkFilledFields(fields);
+  }
+
+  bool areSecandPartFieldsFilled() {
+    final fields = {
+      'Top Solide Operation': topSolideOperation,
+      'Operation Name': operationName,
+      'Display Operation': displayOperation,
+      'Arrosage Type': arrosageType,
+    };
+    return checkFilledFields(fields);
+  }
+
   @override
   void onInit() {
     super.onInit();
@@ -172,21 +220,6 @@ class CreateProjectController extends GetxController {
     return status;
   }
 
-// void _handleFolderPicked(Map<String, List<String>>? filesByType) {
-//   if (filesByType != null) {
-//     // caoFilePath.text = selectedFile
-//     print("Files grouped by type received in parent:");
-//     filesByType.forEach((extension, files) {
-//       print("Files with extension .$extension:");
-//       for (var file in files) {
-//         print(" - $file");
-//       }
-//     });
-//   } else {
-//     print("Folder picker was canceled.");
-//   }
-// }
-
   void selectFile(selectedFile, controller) {
     if (selectedFile != null) {
       if (selectedFile.containsKey("file")) {
@@ -315,5 +348,158 @@ class CreateProjectController extends GetxController {
 
     await filesServices.saveContentToFile(
         structuredJson, directory, fileName.split(".")[0], "json");
+  }
+
+  // Method to copy the selected folder to a new location
+  void copySelectedFolder() {
+    if (caoFilePath.text.isNotEmpty) {
+      String userProfile = Platform.environment['USERPROFILE'] ??
+          '\\home\\${Platform.environment['USER']}';
+      String defaultDesktopPath = "$userProfile\\Desktop\\aerobase";
+      String subPath = "${pieceRef.text}\\${pieceIndice.text}\\copied_folder";
+      final sourceDir = Directory(caoFilePath.text);
+      print("subPath: $subPath");
+      final destinationDir = Directory(path.join(defaultDesktopPath, subPath));
+      if (sourceDir.existsSync()) {
+        try {
+          destinationDir.createSync(recursive: true);
+          filesServices.copyDirectory(sourceDir, destinationDir);
+          logger.i("All fields are filled. Files copied successfully.");
+
+          // Check for "Fiche Zoller" folder
+          final ficheZollerDir =
+              Directory(path.join(destinationDir.path, 'Fiche Zoller'));
+          if (!ficheZollerDir.existsSync()) {
+            ficheZollerDir.createSync(recursive: true);
+            logger.i("Fiche Zoller folder created.");
+          }
+
+          // Ensure fileZPath and form are copied into "Fiche Zoller"
+          ensureFileInDirectory(fileZPath.text, ficheZollerDir);
+          ensureFileInDirectory(form.text, ficheZollerDir);
+
+          // Remove Thumbs.db if it exists
+          removeThumbsDb(destinationDir);
+
+          // Remove JSON file with the same name if it exists
+          removeJsonFileWithSameName(fileZPath.text);
+
+          // Check for .arc or .ARC files in the destination directory
+          if (!containsArcFiles(destinationDir)) {
+            // Copy faoFilePath into the destination directory if no .arc or .ARC files are found
+            ensureFileInDirectory(faoFilePath.text, destinationDir);
+          }
+
+          // Reset all controllers on success
+          resetAllControllers();
+        } catch (e) {
+          logger.e("Error copying files: $e");
+        }
+      } else {
+        logger.e("Source directory does not exist.");
+      }
+    }
+  }
+
+  void resControllers(controllers) {
+    for (var controller in controllers) {
+      controller.clear();
+    }
+  }
+
+  void resetFirstPartControllers() {
+    final controllers = [
+      pieceRef,
+      pieceIndice,
+      machine,
+      pieceDiametre,
+      pieceEjection,
+      pieceName,
+      epaisseur,
+      materiel,
+      form,
+      programmeur,
+      regieur,
+      specification,
+      organeBP,
+      organeCB,
+      selectedItemsController,
+      caoFilePath,
+      faoFilePath,
+      fileZPath,
+      planFilePath,
+    ];
+    resControllers(controllers);
+  }
+
+  void resetSecandPartControllers() {
+    final controllers = [
+      topSolideOperation,
+      operationName,
+      displayOperation,
+      arrosageType,
+    ];
+    resControllers(controllers);
+  }
+
+  void resetAllControllers() {
+    resetFirstPartControllers();
+    resetSecandPartControllers();
+  }
+
+  bool containsArcFiles(Directory directory) {
+    final arcFiles = directory.listSync().where((entity) {
+      if (entity is File) {
+        final extension = path.extension(entity.path).toLowerCase();
+        return extension == '.arc';
+      }
+      return false;
+    }).toList();
+    return arcFiles.isNotEmpty;
+  }
+
+  void removeJsonFileWithSameName(String filePath) {
+    final fileNameWithoutExtension = path.basenameWithoutExtension(filePath);
+    final directory = path.dirname(filePath);
+    final jsonFile =
+        File(path.join(directory, '$fileNameWithoutExtension.json'));
+    if (jsonFile.existsSync()) {
+      jsonFile.deleteSync();
+      logger.i("Removed JSON file: ${jsonFile.path}");
+    }
+  }
+
+  void removeThumbsDb(Directory directory) {
+    final thumbsDbFile = File(path.join(directory.path, 'Thumbs.db'));
+    if (thumbsDbFile.existsSync()) {
+      thumbsDbFile.deleteSync();
+      logger.i("Thumbs.db file removed from ${directory.path}");
+    }
+  }
+
+  void ensureFileInDirectory(String filePath, Directory destinationDir) {
+    final file = File(filePath);
+    final destinationFile =
+        File(path.join(destinationDir.path, path.basename(file.path)));
+    print("destinationFile: ${destinationFile.existsSync()}");
+    if (!destinationFile.existsSync()) {
+      if (file.existsSync()) {
+        file.copySync(destinationFile.path);
+        logger.i("Copied ${file.path} to ${destinationFile.path}");
+        // Remove Thumbs.db if it exists
+        removeThumbsDb(destinationDir);
+      } else {
+        logger.w("Source file ${file.path} does not exist.");
+      }
+    } else {
+      logger
+          .i("File ${destinationFile.path} already exists in the destination.");
+    }
+  }
+
+  bool checkForFicheZoller(Directory destinationDir) {
+    final ficheZollerDir =
+        Directory(path.join(destinationDir.path, 'Fiche Zoller'));
+    return ficheZollerDir.existsSync();
   }
 }

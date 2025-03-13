@@ -37,8 +37,8 @@ class _JsonDropDownState extends State<JsonDropDown> {
     super.initState();
 
     Future.delayed(Duration.zero, () {
-      logger.e(
-          "onChanged: ${widget.onChanged?.toString() ?? 'onChanged is null'}");
+      // logger.e(
+      //     "onChanged: ${widget.onChanged?.toString() ?? 'onChanged is null'}");
     });
   }
 

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:path/path.dart' as path;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:logger/logger.dart';
@@ -333,5 +334,23 @@ class FilesServices {
     final fileName = path.toString().split('\\').last.split('.').first;
     structuredJson['fileName'] = fileName;
     return structuredJson;
+  }
+
+  // Method to copy a directory and its contents
+  void copyDirectory(Directory source, Directory destination) {
+    if (!destination.existsSync()) {
+      destination.createSync(recursive: true);
+    }
+
+    source.listSync().forEach((entity) {
+      if (entity is Directory) {
+        var newDirectory =
+            Directory(path.join(destination.path, path.basename(entity.path)));
+        copyDirectory(entity, newDirectory);
+      } else if (entity is File) {
+        entity
+            .copySync(path.join(destination.path, path.basename(entity.path)));
+      }
+    });
   }
 }
