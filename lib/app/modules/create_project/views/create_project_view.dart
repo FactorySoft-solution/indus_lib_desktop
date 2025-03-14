@@ -145,7 +145,8 @@ class CreateProjectView extends GetView<CreateProjectController> {
   Widget _buildRightColumn(double width, double height) {
     void nextStep() {
       if (controller.areFirstPartFieldsFilled()) {
-        homeController.activePage.value = "Formes de pièces/resume-project";
+        homeController.activePage.value =
+            "Ajouter une mouvelle pièce/resume-project";
       }
 
       controller.update();

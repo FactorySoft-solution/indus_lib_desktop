@@ -34,9 +34,9 @@ class MainView extends GetView<HomeController> {
                     () {
                       // logger.i(controller.activePage.value);
                       switch (controller.activePage.value) {
-                        case 'Formes de pièces':
+                        case 'Ajouter une mouvelle pièce':
                           return CreateProjectView();
-                        case 'Formes de pièces/resume-project':
+                        case 'Ajouter une mouvelle pièce/resume-project':
                           return ResumeProjectView();
                         default:
                           return PdfToHtmlConverter();

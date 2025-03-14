@@ -81,6 +81,27 @@ class CreateProjectController extends GetxController {
     return checkFilledFields(fields);
   }
 
+  Map<String, String> sideBarInfo() {
+    final fields = {
+      'Pièce ref º': pieceRef.text,
+      'Indice ref º': pieceIndice.text,
+      'Machine': machine.text,
+      'Matière': materiel.text,
+      'Ø Brute': pieceDiametre.text,
+      'Type Mâchoire éjection': pieceEjection.text,
+      'Tirage': selectedItemsController.text.contains("Tirage").toString(),
+      'Cimblot': selectedItemsController.text.contains("Cimblot").toString(),
+      'Manchon': selectedItemsController.text.contains("Manchon").toString(),
+      'Epaisseur Pièce': epaisseur.text,
+      'Programmeur': programmeur.text,
+      'Régleur Machine': regieur.text,
+      'Piece Name': pieceName.text,
+      'Organe BP': organeBP.text,
+      'Organe CB': organeCB.text,
+    };
+    return fields;
+  }
+
   bool areSecandPartFieldsFilled() {
     final fields = {
       'Top Solide Operation': topSolideOperation,
