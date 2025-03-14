@@ -1,4 +1,5 @@
 import 'package:code_g/app/modules/create_project/controllers/create_project_controller.dart';
+import 'package:code_g/app/modules/search_piece/controllers/search_piece_controller.dart';
 import 'package:get/get.dart';
 
 import '../controllers/home_controller.dart';
@@ -16,6 +17,9 @@ class HomeBinding extends Bindings {
     );
     Get.lazyPut<CreateProjectController>(
       () => CreateProjectController(),
+    );
+    Get.lazyPut<SearchPieceController>(
+      () => SearchPieceController(),
     );
   }
 }

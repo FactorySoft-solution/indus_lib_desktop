@@ -1,17 +1,15 @@
+import 'dart:io';
+
 import 'package:code_g/app/core/services/files_services.dart';
 import 'package:code_g/app/core/values/app_text_styles.dart';
 import 'package:code_g/app/widgets/CustomCard.dart';
-import 'package:code_g/app/widgets/DropdownButtonWidget.dart';
 import 'package:code_g/app/widgets/button.dart';
-import 'package:code_g/app/widgets/checkbox_group_widget.dart';
 import 'package:code_g/app/widgets/file_picker_widget.dart';
-import 'package:code_g/app/widgets/image_picker_widget.dart';
 import 'package:code_g/app/widgets/jsonDropDown.dart';
 import 'package:code_g/app/widgets/text_input_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
-import 'dart:io';
 
 import '../controllers/create_project_controller.dart';
 

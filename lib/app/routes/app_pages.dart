@@ -1,4 +1,6 @@
 import 'package:code_g/app/modules/home/views/main.dart';
+import 'package:code_g/app/modules/search_piece/bindings/search_piece_binding.dart';
+import 'package:code_g/app/modules/search_piece/views/search_view.dart';
 import 'package:code_g/app/widgets/pdf_to_html_converter.dart';
 import 'package:get/get.dart';
 
@@ -41,9 +43,9 @@ class AppPages {
             binding: CreateProjectBinding(),
           ),
           GetPage(
-            name: _Paths.PdfToHtmlConverter,
-            page: () => PdfToHtmlConverter(),
-            // binding: CreateProjectBinding(),
+            name: _Paths.SEARCHPIECE,
+            page: () => SearchView(),
+            binding: SearchPieceBinding(),
           ),
         ]),
     GetPage(

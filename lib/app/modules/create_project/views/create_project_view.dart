@@ -10,7 +10,6 @@ import 'package:code_g/app/widgets/jsonDropDown.dart';
 import 'package:code_g/app/widgets/text_input_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:logger/logger.dart';
 
 import '../controllers/create_project_controller.dart';
 
