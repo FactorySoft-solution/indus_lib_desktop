@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'dart:io';
+import 'dart:convert';
 import 'package:path/path.dart' as path;
 
 class SearchPieceController extends GetxController {
@@ -35,9 +36,24 @@ class SearchPieceController extends GetxController {
   final materielController = TextEditingController();
   final specificationController = TextEditingController();
 
+  // Observable fields for search
+  final RxString sortField = 'pieceRef'.obs; // Default sort field
+  final RxBool sortAscending = true.obs; // Default sort order
+
+  // Sort options map (display name to field name)
+  final Map<String, String> sortOptions = {
+    'Référence (A-Z)': 'pieceRef',
+    'Indice (A-Z)': 'pieceIndice',
+    'Machine (A-Z)': 'machine',
+    'Nom de pièce (A-Z)': 'pieceName',
+    'Date (Plus récent)': 'createdDate',
+  };
+
   @override
   void onInit() {
     super.onInit();
+    // Add listeners to controllers to update observable fields when values change
+    setupControllerListeners();
   }
 
   @override
@@ -59,6 +75,14 @@ class SearchPieceController extends GetxController {
       final Map<String, dynamic> fetchedJsonData = await sharedService
           .loadJsonFromAssets('assets/json/listeMACHINE.json');
       var newData = [...fetchedJsonData["contenu"][0]["machines"]];
+
+      // Sort machines alphabetically by name
+      newData.sort((a, b) {
+        final String nameA = a['nom']?.toString().toLowerCase() ?? '';
+        final String nameB = b['nom']?.toString().toLowerCase() ?? '';
+        return nameA.compareTo(nameB);
+      });
+
       return newData;
     } catch (e) {
       print('Error: $e');
@@ -71,6 +95,14 @@ class SearchPieceController extends GetxController {
       final Map<String, dynamic> fetchedJsonData = await sharedService
           .loadJsonFromAssets('assets/json/machoireEJECTION.json');
       var newData = [...fetchedJsonData["contenu"][0]["types"]];
+
+      // Sort types alphabetically
+      newData.sort((a, b) {
+        final String nameA = a.toString().toLowerCase();
+        final String nameB = b.toString().toLowerCase();
+        return nameA.compareTo(nameB);
+      });
+
       return newData;
     } catch (e) {
       print('Error: $e');
@@ -83,6 +115,14 @@ class SearchPieceController extends GetxController {
       final Map<String, dynamic> fetchedJsonData = await sharedService
           .loadJsonFromAssets('assets/json/listePROGRAMMEUR.json');
       var newData = [...fetchedJsonData["contenu"]];
+
+      // Sort programmers alphabetically by name
+      newData.sort((a, b) {
+        final String nameA = a['nom']?.toString().toLowerCase() ?? '';
+        final String nameB = b['nom']?.toString().toLowerCase() ?? '';
+        return nameA.compareTo(nameB);
+      });
+
       return newData;
     } catch (e) {
       print('Error: $e');
@@ -96,6 +136,14 @@ class SearchPieceController extends GetxController {
           .loadJsonFromAssets('assets/json/arrosage_type.json');
 
       var newData = [...fetchedJsonData["contenu"]];
+
+      // Sort arrosage types alphabetically by name
+      newData.sort((a, b) {
+        final String nameA = a['name']?.toString().toLowerCase() ?? '';
+        final String nameB = b['name']?.toString().toLowerCase() ?? '';
+        return nameA.compareTo(nameB);
+      });
+
       return newData;
     } catch (e) {
       print('Error: $e');
@@ -108,6 +156,14 @@ class SearchPieceController extends GetxController {
       final Map<String, dynamic> fetchedJsonData = await sharedService
           .loadJsonFromAssets('assets/json/topSolide_operations.json');
       var newData = [...fetchedJsonData["contenu"]];
+
+      // Sort operations alphabetically by name
+      newData.sort((a, b) {
+        final String nameA = a['name']?.toString().toLowerCase() ?? '';
+        final String nameB = b['name']?.toString().toLowerCase() ?? '';
+        return nameA.compareTo(nameB);
+      });
+
       return newData;
     } catch (e) {
       print('Error: $e');
@@ -168,7 +224,32 @@ class SearchPieceController extends GetxController {
           for (var pieceIndexDir in pieceIndexDirs) {
             if (pieceIndexDir is Directory) {
               try {
-                // Look for project data in the copied_folder
+                // Look for project.json file first
+                final projectJsonFile =
+                    File(path.join(pieceIndexDir.path, 'project.json'));
+
+                if (await projectJsonFile.exists()) {
+                  // Read project data from JSON file
+                  final String contents = await projectJsonFile.readAsString();
+                  final Map<String, dynamic> projectData = jsonDecode(contents);
+
+                  // Add directory paths to the project data
+                  projectData['projectPath'] = pieceIndexDir.path;
+                  projectData['copiedFolderPath'] =
+                      path.join(pieceIndexDir.path, 'copied_folder');
+
+                  // Check for Fiche Zoller files
+                  await enrichProjectDataWithFicheZoller(
+                      projectData, Directory(projectData['copiedFolderPath']));
+
+                  // Check if project matches search criteria
+                  if (matchesSearchCriteria(projectData)) {
+                    results.add(projectData);
+                  }
+                  continue; // Skip further processing for this directory
+                }
+
+                // If no project.json file, fallback to look for copied_folder
                 final copiedFolder =
                     Directory(path.join(pieceIndexDir.path, 'copied_folder'));
                 if (await copiedFolder.exists()) {
@@ -178,15 +259,6 @@ class SearchPieceController extends GetxController {
                     'pieceRef': path.basename(pieceRefDir.path),
                     'pieceIndice': path.basename(pieceIndexDir.path),
                     'copiedFolderPath': copiedFolder.path,
-                    'machine': machine.value,
-                    'pieceDiametre': '',
-                    'form': '',
-                    'epaisseur': '',
-                    'operationName': '',
-                    'topSolideOperation': '',
-                    'materiel': '',
-                    'specification': '',
-                    'ficheZollerContent': '',
                   };
 
                   // Look for Fiche Zoller folder and files
@@ -248,82 +320,78 @@ class SearchPieceController extends GetxController {
   // Method to check if a project matches search criteria
   bool matchesSearchCriteria(Map<String, dynamic> projectData) {
     try {
-      // Machine search - compare machine search term with Fiche Zoller filename
-      if (machine.value.isNotEmpty) {
-        // Get the Fiche Zoller filename if available
+      // Check if project data exists
+      if (projectData.isEmpty) {
+        return false;
+      }
+
+      // Get search terms from controllers (non-empty only)
+      final searchTerms = <String, String>{};
+
+      if (machine.value.isNotEmpty)
+        searchTerms['machine'] = machine.value.toLowerCase();
+
+      if (pieceDiametre.value.isNotEmpty)
+        searchTerms['pieceDiametre'] = pieceDiametre.value.toLowerCase();
+
+      if (form.value.isNotEmpty) searchTerms['form'] = form.value.toLowerCase();
+
+      if (epaisseur.value.isNotEmpty)
+        searchTerms['epaisseur'] = epaisseur.value.toLowerCase();
+
+      if (operationName.value.isNotEmpty)
+        searchTerms['operationName'] = operationName.value.toLowerCase();
+
+      if (topSolideOperation.value.isNotEmpty)
+        searchTerms['topSolideOperation'] =
+            topSolideOperation.value.toLowerCase();
+
+      if (materiel.value.isNotEmpty)
+        searchTerms['materiel'] = materiel.value.toLowerCase();
+
+      if (specification.value.isNotEmpty)
+        searchTerms['specification'] = specification.value.toLowerCase();
+
+      // If no search terms, return all projects
+      if (searchTerms.isEmpty) {
+        return true;
+      }
+
+      // Check if Fiche Zoller filename contains machine name if searching by machine
+      if (searchTerms.containsKey('machine') &&
+          projectData.containsKey('ficheZollerFilename') &&
+          projectData['ficheZollerFilename'] != null &&
+          projectData['ficheZollerFilename'].toString().isNotEmpty) {
         final ficheZollerFilename =
-            projectData['ficheZollerFilename']?.toString().toLowerCase() ?? '';
-
+            projectData['ficheZollerFilename'].toString().toLowerCase();
         // If the Fiche Zoller file exists but doesn't contain the machine name, exclude this project
-        if (ficheZollerFilename.isNotEmpty &&
-            !ficheZollerFilename.contains(machine.value.toLowerCase())) {
+        if (!ficheZollerFilename.contains(searchTerms['machine']!)) {
+          return false;
+        }
+        // If matched by Fiche Zoller, no need to check machine in project data
+        searchTerms.remove('machine');
+      }
+
+      // Check remaining search terms against project data
+      for (final entry in searchTerms.entries) {
+        final field = entry.key;
+        final searchValue = entry.value;
+
+        // Check if field exists in project data
+        if (!projectData.containsKey(field) ||
+            projectData[field] == null ||
+            projectData[field].toString().isEmpty) {
+          return false;
+        }
+
+        // Check if field value contains search term
+        final fieldValue = projectData[field].toString().toLowerCase();
+        if (!fieldValue.contains(searchValue)) {
           return false;
         }
       }
-      print('Project data : $projectData');
-      // Piece Index search
-      if (pieceDiametre.value.isNotEmpty) {
-        final projectPieceIndex =
-            projectData['pieceIndice']?.toString().toLowerCase() ?? '';
-        if (!projectPieceIndex.contains(pieceDiametre.value.toLowerCase())) {
-          return false;
-        }
-      }
 
-      // // Form search
-      // if (form.value.isNotEmpty) {
-      //   final projectForm = projectData['form']?.toString().toLowerCase() ?? '';
-      //   if (!projectForm.contains(form.value.toLowerCase())) {
-      //     return false;
-      //   }
-      // }
-
-      // // Thickness search
-      // if (epaisseur.value.isNotEmpty) {
-      //   final projectEpaisseur =
-      //       projectData['epaisseur']?.toString().toLowerCase() ?? '';
-      //   if (!projectEpaisseur.contains(epaisseur.value.toLowerCase())) {
-      //     return false;
-      //   }
-      // }
-
-      // // Operation name search
-      // if (operationName.value.isNotEmpty) {
-      //   final projectOperation =
-      //       projectData['operationName']?.toString().toLowerCase() ?? '';
-      //   if (!projectOperation.contains(operationName.value.toLowerCase())) {
-      //     return false;
-      //   }
-      // }
-
-      // // TopSolid operation search
-      // if (topSolideOperation.value.isNotEmpty) {
-      //   final projectTopSolide =
-      //       projectData['topSolideOperation']?.toString().toLowerCase() ?? '';
-      //   if (!projectTopSolide
-      //       .contains(topSolideOperation.value.toLowerCase())) {
-      //     return false;
-      //   }
-      // }
-
-      // // Material search
-      // if (materiel.value.isNotEmpty) {
-      //   final projectMateriel =
-      //       projectData['materiel']?.toString().toLowerCase() ?? '';
-      //   if (!projectMateriel.contains(materiel.value.toLowerCase())) {
-      //     return false;
-      //   }
-      // }
-
-      // // Specification search
-      // if (specification.value.isNotEmpty) {
-      //   final projectSpec =
-      //       projectData['specification']?.toString().toLowerCase() ?? '';
-      //   if (!projectSpec.contains(specification.value.toLowerCase())) {
-      //     return false;
-      //   }
-      // }
-
+      // If all search criteria match, return true
       return true;
     } catch (e) {
       logger.e('Error matching search criteria: $e');
@@ -333,20 +401,46 @@ class SearchPieceController extends GetxController {
 
   // Method to update search field values from controllers
   void updateSearchFields() {
-    machine.value = machineController.text;
-    pieceDiametre.value = pieceDiametreController.text;
-    form.value = formController.text;
-    epaisseur.value = epaisseurController.text;
-    operationName.value = operationNameController.text;
-    topSolideOperation.value = topSolideOperationController.text;
-    materiel.value = materielController.text;
-    specification.value = specificationController.text;
+    machine.value = machineController.text.trim();
+    pieceDiametre.value = pieceDiametreController.text.trim();
+    form.value = formController.text.trim();
+    epaisseur.value = epaisseurController.text.trim();
+    operationName.value = operationNameController.text.trim();
+    topSolideOperation.value = topSolideOperationController.text.trim();
+    materiel.value = materielController.text.trim();
+    specification.value = specificationController.text.trim();
   }
 
   // Method to perform search with current field values
   Future<void> performSearch() async {
     updateSearchFields();
     await searchProjects();
+    sortResults(); // Apply sorting after search
+  }
+
+  // Method to sort search results
+  void sortResults() {
+    final field = sortField.value;
+    final ascending = sortAscending.value;
+
+    // Sort the results list based on the sort field
+    searchResults.sort((a, b) {
+      // Handle null values by putting them last
+      if (!a.containsKey(field) || a[field] == null) return ascending ? 1 : -1;
+      if (!b.containsKey(field) || b[field] == null) return ascending ? -1 : 1;
+
+      // Handle date sorting
+      if (field == 'createdDate') {
+        final aDate = a[field].toString();
+        final bDate = b[field].toString();
+        return ascending ? aDate.compareTo(bDate) : bDate.compareTo(aDate);
+      }
+
+      // Default string comparison
+      final aValue = a[field].toString().toLowerCase();
+      final bValue = b[field].toString().toLowerCase();
+      return ascending ? aValue.compareTo(bValue) : bValue.compareTo(aValue);
+    });
   }
 
   // Method to clear search results
@@ -369,5 +463,200 @@ class SearchPieceController extends GetxController {
     topSolideOperationController.clear();
     materielController.clear();
     specificationController.clear();
+  }
+
+  // Setup listeners for text controllers to update reactive fields
+  void setupControllerListeners() {
+    machineController.addListener(() {
+      machine.value = machineController.text.trim();
+    });
+
+    pieceDiametreController.addListener(() {
+      pieceDiametre.value = pieceDiametreController.text.trim();
+    });
+
+    formController.addListener(() {
+      form.value = formController.text.trim();
+    });
+
+    epaisseurController.addListener(() {
+      epaisseur.value = epaisseurController.text.trim();
+    });
+
+    operationNameController.addListener(() {
+      operationName.value = operationNameController.text.trim();
+    });
+
+    topSolideOperationController.addListener(() {
+      topSolideOperation.value = topSolideOperationController.text.trim();
+    });
+
+    materielController.addListener(() {
+      materiel.value = materielController.text.trim();
+    });
+
+    specificationController.addListener(() {
+      specification.value = specificationController.text.trim();
+    });
+  }
+
+  // Handle reset for a specific field
+  void handleReset(String fieldName) {
+    switch (fieldName) {
+      case 'machine':
+        machineController.clear();
+        machine.value = '';
+        break;
+      case 'pieceDiametre':
+        pieceDiametreController.clear();
+        pieceDiametre.value = '';
+        break;
+      case 'form':
+        formController.clear();
+        form.value = '';
+        break;
+      case 'epaisseur':
+        epaisseurController.clear();
+        epaisseur.value = '';
+        break;
+      case 'operationName':
+        operationNameController.clear();
+        operationName.value = '';
+        break;
+      case 'topSolideOperation':
+        topSolideOperationController.clear();
+        topSolideOperation.value = '';
+        break;
+      case 'materiel':
+        materielController.clear();
+        materiel.value = '';
+        break;
+      case 'specification':
+        specificationController.clear();
+        specification.value = '';
+        break;
+      default:
+        break;
+    }
+
+    // Auto-search if we have other fields with values
+    if (hasActiveSearchFilters()) {
+      performSearch();
+    }
+  }
+
+  // Check if there are any active search filters
+  bool hasActiveSearchFilters() {
+    return machine.value.isNotEmpty ||
+        pieceDiametre.value.isNotEmpty ||
+        form.value.isNotEmpty ||
+        epaisseur.value.isNotEmpty ||
+        operationName.value.isNotEmpty ||
+        topSolideOperation.value.isNotEmpty ||
+        materiel.value.isNotEmpty ||
+        specification.value.isNotEmpty;
+  }
+
+  // Method to open a folder in the file explorer
+  Future<void> openFolder(String folderPath) async {
+    try {
+      logger.i('Opening folder: $folderPath');
+
+      // Clean up the path - replace forward slashes with backslashes on Windows
+      String cleanPath = folderPath;
+      if (Platform.isWindows) {
+        cleanPath = folderPath.replaceAll('/', '\\');
+        // Ensure path isn't quoted
+        cleanPath = cleanPath.replaceAll('"', '');
+      }
+
+      logger.i('Cleaned path: $cleanPath');
+
+      // Special handling for aerobase path
+      if (cleanPath.contains('aerobase')) {
+        final parts = cleanPath.split('aerobase');
+        if (parts.length > 1) {
+          // Add the pieceRef and pieceIndice to the path if it's not there
+          String afterAerobase = parts[1];
+          logger.i('After aerobase: $afterAerobase');
+
+          if (afterAerobase.isEmpty) {
+            // This is just the aerobase path with no specific project
+            logger.e(
+                'Cannot open just the aerobase folder, need a specific project path');
+            return;
+          }
+        }
+      }
+
+      // Check if the folder exists
+      final dir = Directory(cleanPath);
+      if (!dir.existsSync()) {
+        logger.e('Folder does not exist: $cleanPath');
+        // Try to infer the correct path if it contains aerobase
+        if (cleanPath.contains('aerobase')) {
+          // Get user desktop
+          String userProfile = Platform.environment['USERPROFILE'] ?? '';
+          if (userProfile.isNotEmpty) {
+            String desktopPath = "$userProfile\\Desktop";
+            // Extract project ref and indice from the path if possible
+            final regex = RegExp(r'(\w+)\\(\w+)');
+            final match = regex.firstMatch(cleanPath.split('aerobase').last);
+
+            if (match != null && match.groupCount >= 2) {
+              String pieceRef = match.group(1) ?? '';
+              String pieceIndice = match.group(2) ?? '';
+
+              if (pieceRef.isNotEmpty && pieceIndice.isNotEmpty) {
+                String newPath =
+                    "$desktopPath\\aerobase\\$pieceRef\\$pieceIndice";
+                logger.i('Trying alternative path: $newPath');
+
+                if (Directory(newPath).existsSync()) {
+                  cleanPath = newPath;
+                  logger.i('Alternative path exists, using: $cleanPath');
+                } else {
+                  logger.e('Alternative path does not exist: $newPath');
+                  return;
+                }
+              } else {
+                logger
+                    .e('Could not extract pieceRef and pieceIndice from path');
+                return;
+              }
+            } else {
+              logger.e('Could not match project information in path');
+              return;
+            }
+          } else {
+            logger.e('Could not determine user profile');
+            return;
+          }
+        } else {
+          return;
+        }
+      }
+
+      logger.i('Folder exists, attempting to open: $cleanPath');
+
+      if (Platform.isWindows) {
+        // On Windows, use explorer.exe
+        logger.i('Running: explorer.exe "$cleanPath"');
+        final result = await Process.run('explorer.exe', [cleanPath]);
+        logger.i('Process exit code: ${result.exitCode}');
+        logger.i('Process stdout: ${result.stdout}');
+        logger.i('Process stderr: ${result.stderr}');
+      } else if (Platform.isMacOS) {
+        // On macOS, use open
+        await Process.run('open', [cleanPath]);
+      } else if (Platform.isLinux) {
+        // On Linux, use xdg-open
+        await Process.run('xdg-open', [cleanPath]);
+      } else {
+        logger.e('Unsupported platform for opening folders');
+      }
+    } catch (e) {
+      logger.e('Error opening folder: $e');
+    }
   }
 }

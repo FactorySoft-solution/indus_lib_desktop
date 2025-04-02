@@ -63,7 +63,7 @@ class CreateProjectView extends GetView<CreateProjectController> {
         CustomTextInput(
           width: width,
           height: height,
-          label: 'Pièce ref N’ *',
+          label: 'Pièce ref N°',
           hint: 'Ajouter refº pièce',
           controller: controller.pieceRef,
         ),
@@ -75,6 +75,9 @@ class CreateProjectView extends GetView<CreateProjectController> {
           keyExtractor: (item) => item["indice"],
           width: width,
           height: height,
+          showReset: true,
+          fieldName: 'pieceIndice',
+          onReset: () => controller.handleReset('pieceIndice'),
         ),
         JsonDropDown(
           label: "Machine *",
@@ -84,12 +87,15 @@ class CreateProjectView extends GetView<CreateProjectController> {
           keyExtractor: (item) => item["nom"],
           width: width,
           height: height,
+          showReset: true,
+          fieldName: 'machine',
+          onReset: () => controller.handleReset('machine'),
         ),
         CustomTextInput(
           width: width,
           height: height,
           label: 'Diamètre de brute *',
-          hint: 'Choisir l’epaisseur de pièce',
+          hint: "Choisir l'epaisseur de pièce",
           controller: controller.pieceDiametre,
         ),
         JsonDropDown(
@@ -100,6 +106,9 @@ class CreateProjectView extends GetView<CreateProjectController> {
           keyExtractor: (item) => item["type"],
           width: width,
           height: height,
+          showReset: true,
+          fieldName: 'pieceEjection',
+          onReset: () => controller.handleReset('pieceEjection'),
         ),
         CustomTextInput(
           width: width,
@@ -157,7 +166,7 @@ class CreateProjectView extends GetView<CreateProjectController> {
           width: width,
           height: height,
           label: 'Epaisseur Pièce *',
-          hint: 'Saisir l’epaisseur de pièce',
+          hint: "Saisir l'epaisseur de pièce",
           controller: controller.epaisseur,
         ),
         CustomTextInput(
@@ -171,7 +180,7 @@ class CreateProjectView extends GetView<CreateProjectController> {
           width: width,
           height: height,
           label: 'Forme Pièce *',
-          hint: 'Ajouter l’image de la pièce',
+          hint: "Ajouter l'image de la pièce",
           controller: controller.form,
         ),
         JsonDropDown(
@@ -182,6 +191,9 @@ class CreateProjectView extends GetView<CreateProjectController> {
           keyExtractor: (item) => item["nom"],
           width: width,
           height: height,
+          showReset: true,
+          fieldName: 'programmeur',
+          onReset: () => controller.handleReset('programmeur'),
         ),
         CustomTextInput(
           width: width,

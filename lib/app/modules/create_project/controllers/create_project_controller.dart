@@ -1,10 +1,12 @@
 import 'package:code_g/app/core/services/files_services.dart';
 import 'package:code_g/app/core/services/shared_service.dart';
+import 'package:code_g/app/modules/home/controllers/home_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
 import 'dart:io';
 import 'package:path/path.dart' as path;
+import 'dart:convert';
 
 class CreateProjectController extends GetxController {
   final Logger logger = new Logger();
@@ -114,6 +116,33 @@ class CreateProjectController extends GetxController {
     super.onInit();
   }
 
+  void handleReset(String fieldName) {
+    switch (fieldName) {
+      case 'machine':
+        machine.clear();
+        break;
+      case 'pieceIndice':
+        pieceIndice.clear();
+        break;
+      case 'pieceEjection':
+        pieceEjection.clear();
+        break;
+      case 'programmeur':
+        programmeur.clear();
+        break;
+      case 'topSolideOperation':
+        topSolideOperation.clear();
+        break;
+      case 'arrosageType':
+        arrosageType.clear();
+        break;
+      default:
+        // Handle unknown field name
+        logger.w('Unknown field name for reset: $fieldName');
+    }
+    update(); // Trigger UI update
+  }
+
   Future<List<dynamic>> extractIndicesJsonData() async {
     try {
       final Map<String, dynamic> fetchedJsonData = await sharedService
@@ -133,6 +162,14 @@ class CreateProjectController extends GetxController {
       final Map<String, dynamic> fetchedJsonData = await sharedService
           .loadJsonFromAssets('assets/json/listeMACHINE.json');
       var newData = [...fetchedJsonData["contenu"][0]["machines"]];
+
+      // Sort machines alphabetically by name
+      newData.sort((a, b) {
+        final String nameA = a['nom']?.toString().toLowerCase() ?? '';
+        final String nameB = b['nom']?.toString().toLowerCase() ?? '';
+        return nameA.compareTo(nameB);
+      });
+
       return newData;
     } catch (e) {
       print('Error: $e');
@@ -145,6 +182,14 @@ class CreateProjectController extends GetxController {
       final Map<String, dynamic> fetchedJsonData = await sharedService
           .loadJsonFromAssets('assets/json/machoireEJECTION.json');
       var newData = [...fetchedJsonData["contenu"][0]["types"]];
+
+      // Sort types alphabetically
+      newData.sort((a, b) {
+        final String nameA = a.toString().toLowerCase();
+        final String nameB = b.toString().toLowerCase();
+        return nameA.compareTo(nameB);
+      });
+
       return newData;
     } catch (e) {
       print('Error: $e');
@@ -157,6 +202,14 @@ class CreateProjectController extends GetxController {
       final Map<String, dynamic> fetchedJsonData = await sharedService
           .loadJsonFromAssets('assets/json/listePROGRAMMEUR.json');
       var newData = [...fetchedJsonData["contenu"]];
+
+      // Sort the programmers data alphabetically by name
+      newData.sort((a, b) {
+        final String nameA = a['nom']?.toString().toLowerCase() ?? '';
+        final String nameB = b['nom']?.toString().toLowerCase() ?? '';
+        return nameA.compareTo(nameB);
+      });
+
       return newData;
     } catch (e) {
       print('Error: $e');
@@ -170,6 +223,14 @@ class CreateProjectController extends GetxController {
           .loadJsonFromAssets('assets/json/arrosage_type.json');
 
       var newData = [...fetchedJsonData["contenu"]];
+
+      // Sort arrosage types alphabetically by name
+      newData.sort((a, b) {
+        final String nameA = a['name']?.toString().toLowerCase() ?? '';
+        final String nameB = b['name']?.toString().toLowerCase() ?? '';
+        return nameA.compareTo(nameB);
+      });
+
       return newData;
     } catch (e) {
       print('Error: $e');
@@ -182,6 +243,14 @@ class CreateProjectController extends GetxController {
       final Map<String, dynamic> fetchedJsonData = await sharedService
           .loadJsonFromAssets('assets/json/topSolide_operations.json');
       var newData = [...fetchedJsonData["contenu"]];
+
+      // Sort operations alphabetically by name
+      newData.sort((a, b) {
+        final String nameA = a['name']?.toString().toLowerCase() ?? '';
+        final String nameB = b['name']?.toString().toLowerCase() ?? '';
+        return nameA.compareTo(nameB);
+      });
+
       return newData;
     } catch (e) {
       print('Error: $e');
@@ -281,7 +350,10 @@ class CreateProjectController extends GetxController {
 
   void selectFileZ(selectedFile) async {
     String filePath = selectedFile["file"]!.first;
-
+    // if (fileZPath.text.isNotEmpty) {
+    //   removeJsonFileWithSameName(fileZPath.text);
+    // }
+    fileZPath.text = filePath;
     String fileName = filePath.split('\\').last;
     bool isFileZ = fileName.toLowerCase().contains('fiche z');
     bool isPdf = fileName.toLowerCase().endsWith('.pdf');
@@ -363,7 +435,10 @@ class CreateProjectController extends GetxController {
     Map<String, dynamic> structuredJson =
         await filesServices.convertFileZHtmlToJson(filePath);
     fileZJsonData.value = List<dynamic>.from(structuredJson["entries"]);
-
+    // print("fileZJsonData: ${fileZJsonData.value}");
+    machine.text =
+        structuredJson["fileName"].contains("R200") ? "R200" : "G160";
+    update();
     await filesServices.saveContentToFile(
         structuredJson, directory, fileName.split(".")[0], "json");
   }
@@ -393,6 +468,7 @@ class CreateProjectController extends GetxController {
           }
 
           // Ensure fileZPath and form are copied into "Fiche Zoller"
+
           ensureFileInDirectory(fileZPath.text, ficheZollerDir);
           ensureFileInDirectory(form.text, ficheZollerDir);
 
@@ -400,7 +476,6 @@ class CreateProjectController extends GetxController {
           removeThumbsDb(destinationDir);
 
           // Remove JSON file with the same name if it exists
-          filesServices.copyDirectory(sourceDir, ficheZollerDir);
           removeJsonFileWithSameName(fileZPath.text);
 
           // Check for .arc or .ARC files in the destination directory
@@ -408,6 +483,10 @@ class CreateProjectController extends GetxController {
             // Copy faoFilePath into the destination directory if no .arc or .ARC files are found
             ensureFileInDirectory(faoFilePath.text, destinationDir);
           }
+
+          // Save project data to project.json before resetting controllers
+          saveProjectDataToJson(
+              path.join(destinationDir.parent.path, 'project.json'));
 
           // Reset all controllers on success
           resetAllControllers();
@@ -462,8 +541,10 @@ class CreateProjectController extends GetxController {
   }
 
   void resetAllControllers() {
+    final homeController = Get.find<HomeController>();
     resetFirstPartControllers();
     resetSecandPartControllers();
+    homeController.activePage.value = "Ajouter une mouvelle pièce";
   }
 
   bool containsArcFiles(Directory directory) {
@@ -520,5 +601,51 @@ class CreateProjectController extends GetxController {
     final ficheZollerDir =
         Directory(path.join(destinationDir.path, 'Fiche Zoller'));
     return ficheZollerDir.existsSync();
+  }
+
+  // Save all controller data to a JSON file
+  void saveProjectDataToJson(String filePath) {
+    try {
+      // Create a map with all controller data
+      final projectData = {
+        'pieceRef': pieceRef.text,
+        'pieceIndice': pieceIndice.text,
+        'machine': machine.text,
+        'pieceDiametre': pieceDiametre.text,
+        'pieceEjection': pieceEjection.text,
+        'pieceName': pieceName.text,
+        'epaisseur': epaisseur.text,
+        'materiel': materiel.text,
+        'form': form.text,
+        'programmeur': programmeur.text,
+        'regieur': regieur.text,
+        'specification': specification.text,
+        'organeBP': organeBP.text,
+        'organeCB': organeCB.text,
+        'selectedItems': selectedItemsController.text,
+        'caoFilePath': caoFilePath.text,
+        'faoFilePath': faoFilePath.text,
+        'fileZPath': fileZPath.text,
+        'planFilePath': planFilePath.text,
+        'topSolideOperation': topSolideOperation.text,
+        'operationName': operationName.text,
+        'displayOperation': displayOperation.text,
+        'arrosageType': arrosageType.text,
+        'fileZStatus': fileZStatus.value,
+        'caoStatus': caoStatus.value,
+        'faoStatus': faoStatus.value,
+        'planStatus': planStatus.value,
+        'createdDate': DateTime.now().toIso8601String(),
+      };
+
+      // Convert to JSON and save to file
+      final jsonString = jsonEncode(projectData);
+      final file = File(filePath);
+      file.writeAsStringSync(jsonString);
+
+      logger.i("Project data saved to $filePath");
+    } catch (e) {
+      logger.e("Error saving project data to JSON: $e");
+    }
   }
 }

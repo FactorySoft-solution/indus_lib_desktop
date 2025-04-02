@@ -11,7 +11,9 @@ class CustomDropdown extends StatefulWidget {
   final List<dynamic> items; // Accept List<dynamic>
   final TextEditingController controller;
   final ValueChanged<String>? onChanged; // Optional onChanged callback
+  final VoidCallback? onReset; // Optional onReset callback
   final bool disabled; // Optional disabled flag
+  final bool showReset; // Whether to show the reset icon
 
   const CustomDropdown({
     Key? key,
@@ -23,7 +25,9 @@ class CustomDropdown extends StatefulWidget {
     this.prefixIcon,
     this.value,
     this.onChanged, // Optional
+    this.onReset, // Optional
     this.disabled = false, // Default is false (enabled)
+    this.showReset = false, // Default is false
     required this.controller,
   }) : super(key: key);
 
@@ -60,6 +64,26 @@ class _CustomDropdownState extends State<CustomDropdown> {
               hintText: widget.hint,
               border: const OutlineInputBorder(),
               prefixIcon: widget.prefixIcon,
+              // Add suffix icon for reset if showReset is true and there's a value
+              suffixIcon: (widget.showReset &&
+                      selectedValue != null &&
+                      selectedValue!.isNotEmpty)
+                  ? IconButton(
+                      icon: const Icon(Icons.close, size: 18),
+                      onPressed: () {
+                        setState(() {
+                          selectedValue = null;
+                        });
+                        widget.controller.clear();
+                        if (widget.onChanged != null) {
+                          widget.onChanged!('');
+                        }
+                        if (widget.onReset != null) {
+                          widget.onReset!();
+                        }
+                      },
+                    )
+                  : null,
             ),
             value: selectedValue,
             isExpanded: true,

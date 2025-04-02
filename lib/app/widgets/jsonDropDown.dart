@@ -10,9 +10,12 @@ class JsonDropDown extends StatefulWidget {
   final String Function(dynamic) keyExtractor;
   final double width;
   final double height;
-
   final ValueChanged<String>? onChanged; // Optional onChanged callback
+  final VoidCallback? onReset; // Optional onReset callback
+  final String fieldName; // Field name for reset handler
   final bool disabled; // Optional disabled flag
+  final bool showReset; // Whether to show the reset icon
+
   const JsonDropDown({
     required this.label,
     required this.hint,
@@ -22,7 +25,10 @@ class JsonDropDown extends StatefulWidget {
     required this.width,
     required this.height,
     this.onChanged, // Optional
+    this.onReset, // Optional
+    this.fieldName = '', // Default is empty string
     this.disabled = false, // Default is false (enabled)
+    this.showReset = false, // Default is false
     super.key,
   });
 
@@ -67,7 +73,9 @@ class _JsonDropDownState extends State<JsonDropDown> {
           width: widget.width,
           height: widget.height,
           onChanged: widget.onChanged, // Pass the onChanged callback
+          onReset: widget.onReset, // Pass the onReset callback
           disabled: widget.disabled, // Pass the disabled flag
+          showReset: widget.showReset, // Pass the showReset flag
         );
       },
     );
