@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:code_g/app/core/services/files_services.dart';
 import 'package:code_g/app/core/values/app_text_styles.dart';
 import 'package:code_g/app/widgets/CustomCard.dart';
 import 'package:code_g/app/widgets/button.dart';
@@ -16,7 +15,6 @@ import '../controllers/create_project_controller.dart';
 class ResumeProjectView extends GetView<CreateProjectController> {
   ResumeProjectView({super.key});
   Logger logger = Logger();
-  final filesServices = new FilesServices();
   void handleSubmit() {
     if (controller.areFirstPartFieldsFilled() &&
         controller.areSecandPartFieldsFilled()) {

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
@@ -31,6 +32,21 @@ class SharedService {
       }
     } catch (e) {
       throw Exception('Error loading JSON from URL: $e');
+    }
+  }
+
+  /// Read JSON file from filesystem
+  Future<Map<String, dynamic>> readJsonFile(String filePath) async {
+    try {
+      final file = File(filePath);
+      if (!await file.exists()) {
+        throw Exception('File does not exist: $filePath');
+      }
+      final String jsonString = await file.readAsString();
+      return jsonDecode(jsonString) as Map<String, dynamic>;
+    } catch (e) {
+      logger.e('Error reading JSON file: $e');
+      throw Exception('Error reading JSON file: $e');
     }
   }
 

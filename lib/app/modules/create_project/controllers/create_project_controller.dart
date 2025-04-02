@@ -1,8 +1,5 @@
-import 'dart:convert';
-
 import 'package:code_g/app/core/services/files_services.dart';
 import 'package:code_g/app/core/services/shared_service.dart';
-// import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
@@ -379,7 +376,7 @@ class CreateProjectController extends GetxController {
       String defaultDesktopPath = "$userProfile\\Desktop\\aerobase";
       String subPath = "${pieceRef.text}\\${pieceIndice.text}\\copied_folder";
       final sourceDir = Directory(caoFilePath.text);
-      print("subPath: $subPath");
+
       final destinationDir = Directory(path.join(defaultDesktopPath, subPath));
       if (sourceDir.existsSync()) {
         try {
@@ -403,6 +400,7 @@ class CreateProjectController extends GetxController {
           removeThumbsDb(destinationDir);
 
           // Remove JSON file with the same name if it exists
+          filesServices.copyDirectory(sourceDir, ficheZollerDir);
           removeJsonFileWithSameName(fileZPath.text);
 
           // Check for .arc or .ARC files in the destination directory

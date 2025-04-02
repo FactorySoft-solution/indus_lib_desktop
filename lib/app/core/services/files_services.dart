@@ -353,4 +353,12 @@ class FilesServices {
       }
     });
   }
+
+  Future<String> getProjectsDirectory() async {
+    String userProfile = Platform.environment['USERPROFILE'] ??
+        '/home/${Platform.environment['USER']}';
+    String projectsPath = "$userProfile/Desktop/aerobase/projects";
+    await ensureDirectory(projectsPath);
+    return projectsPath;
+  }
 }
