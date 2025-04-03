@@ -1,6 +1,8 @@
 import 'package:code_g/app/modules/home/views/main.dart';
 import 'package:code_g/app/modules/search_piece/bindings/search_piece_binding.dart';
 import 'package:code_g/app/modules/search_piece/views/search_view.dart';
+import 'package:code_g/app/modules/robert_method/bindings/robert_method_binding.dart';
+import 'package:code_g/app/modules/robert_method/views/robert_method_view.dart';
 import 'package:code_g/app/widgets/pdf_to_html_converter.dart';
 import 'package:get/get.dart';
 
@@ -46,6 +48,11 @@ class AppPages {
             name: _Paths.SEARCHPIECE,
             page: () => SearchView(),
             binding: SearchPieceBinding(),
+          ),
+          GetPage(
+            name: _Paths.ROBERTMETHOD,
+            page: () => const RobertMethodView(),
+            binding: RobertMethodBinding(),
           ),
         ]),
     GetPage(

@@ -54,7 +54,7 @@ class _CustomDropdownState extends State<CustomDropdown> {
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: SizedBox(
         width: widget.width ?? screenWidth * 0.9,
-        height: 4 + widget.height!,
+        height: widget.height != null ? 4 + widget.height! : null,
         child: IgnorePointer(
           ignoring:
               widget.disabled, // Disable interaction if widget.disabled is true

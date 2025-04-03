@@ -18,7 +18,7 @@ class SidebarListItemWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 50,
-      width: 285,
+      width: 280,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
             begin: Alignment.centerLeft,
@@ -50,14 +50,18 @@ class SidebarListItemWidget extends StatelessWidget {
               const SizedBox(
                 width: 15,
               ),
-              Text(
-                LabelText,
-                style: isActive
-                    ? AppTextStyles.button
-                    : AppTextStyles.button.merge(const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w300,
-                      )),
+              Expanded(
+                child: Text(
+                  LabelText,
+                  style: isActive
+                      ? AppTextStyles.button
+                      : AppTextStyles.button.merge(const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w300,
+                        )),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
               ),
             ],
           ),

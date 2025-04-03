@@ -1,6 +1,9 @@
 import 'package:code_g/app/core/values/app_colors.dart';
 import 'package:code_g/app/modules/create_project/views/create_project_view.dart';
 import 'package:code_g/app/modules/create_project/views/resume_project_view.dart';
+import 'package:code_g/app/modules/robert_method/controllers/robert_method_controller.dart';
+import 'package:code_g/app/modules/robert_method/views/filtage_calculator.dart';
+import 'package:code_g/app/modules/robert_method/views/robert_method_view.dart';
 import 'package:code_g/app/modules/search_piece/views/search_view.dart';
 import 'package:code_g/app/widgets/pdf_to_html_converter.dart';
 import 'package:code_g/app/widgets/sidebar.dart';
@@ -41,6 +44,17 @@ class MainView extends GetView<HomeController> {
                           return ResumeProjectView();
                         case 'Recherche avancée':
                           return SearchView();
+                        case 'Calculateur Méthode Robert':
+                          // Initialize controller before returning view
+                          if (!Get.isRegistered<RobertMethodController>()) {
+                            Get.put(RobertMethodController());
+                          }
+                          return const RobertMethodView();
+                        case 'Calculateur Filtage':
+                          if (!Get.isRegistered<RobertMethodController>()) {
+                            Get.put(RobertMethodController());
+                          }
+                          return const FiltageCalculatorView();
                         default:
                           return PdfToHtmlConverter();
                       }
