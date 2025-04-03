@@ -39,6 +39,8 @@ class SearchPieceController extends GetxController {
   // Observable fields for search
   final RxString sortField = 'pieceRef'.obs; // Default sort field
   final RxBool sortAscending = true.obs; // Default sort order
+  final RxString displayTemplate =
+      'grid'.obs; // Display template: 'list' or 'grid'
 
   // Sort options map (display name to field name)
   final Map<String, String> sortOptions = {
@@ -555,6 +557,12 @@ class SearchPieceController extends GetxController {
         topSolideOperation.value.isNotEmpty ||
         materiel.value.isNotEmpty ||
         specification.value.isNotEmpty;
+  }
+
+  // Toggle between list and grid display templates
+  void toggleDisplayTemplate() {
+    displayTemplate.value = displayTemplate.value == 'list' ? 'grid' : 'list';
+    logger.i('Display template changed to: ${displayTemplate.value}');
   }
 
   // Method to open a folder in the file explorer
