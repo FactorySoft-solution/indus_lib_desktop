@@ -613,173 +613,300 @@ class SearchView extends GetView<SearchPieceController> {
     Get.dialog(
       Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Container(
-          width: Get.width * 0.6,
-          constraints:
-              BoxConstraints(maxWidth: 800, maxHeight: Get.height * 0.8),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: StatefulBuilder(
+          builder: (context, setState) {
+            bool isDetailsView = true; // State variable to track current view
+
+            return Container(
+              width: Get.width * 0.6,
+              constraints:
+                  BoxConstraints(maxWidth: 800, maxHeight: Get.height * 0.8),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                      'Détails de la pièce: ${project['pieceRef']} - ${project['pieceIndice']}',
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Détails de la pièce: ${project['pieceRef']} - ${project['pieceIndice']}',
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          // Template switch button
+                          IconButton(
+                            icon:
+                                Icon(isDetailsView ? Icons.folder : Icons.info),
+                            tooltip:
+                                isDetailsView ? 'Vue dossiers' : 'Vue détails',
+                            onPressed: () {
+                              setState(() {
+                                isDetailsView = !isDetailsView;
+                              });
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () => Get.back(),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Get.back(),
+                  const Divider(),
+                  Expanded(
+                    child: isDetailsView
+                        ? SingleChildScrollView(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Chemin: ${project['projectPath']}',
+                                  style: AppTextStyles.bodyText2,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 2,
+                                ),
+                                if (project['ficheZollerFilename'] != null &&
+                                    project['ficheZollerFilename']
+                                        .toString()
+                                        .isNotEmpty)
+                                  Text(
+                                    'Fiche Zoller: ${project['ficheZollerFilename']}',
+                                    style: AppTextStyles.bodyText2,
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 2,
+                                  ),
+                                if (hasJsonData) ...[
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    'Détails du projet:',
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  if (project['pieceName'] != null &&
+                                      project['pieceName']
+                                          .toString()
+                                          .isNotEmpty)
+                                    Text(
+                                        'Nom de pièce: ${project['pieceName']}'),
+                                  if (project['pieceDiametre'] != null &&
+                                      project['pieceDiametre']
+                                          .toString()
+                                          .isNotEmpty)
+                                    Text(
+                                        'Diamètre: ${project['pieceDiametre']}'),
+                                  if (project['materiel'] != null &&
+                                      project['materiel'].toString().isNotEmpty)
+                                    Text('Matériel: ${project['materiel']}'),
+                                  if (project['programmeur'] != null &&
+                                      project['programmeur']
+                                          .toString()
+                                          .isNotEmpty)
+                                    Text(
+                                        'Programmeur: ${project['programmeur']}'),
+                                  if (project['createdDate'] != null &&
+                                      project['createdDate']
+                                          .toString()
+                                          .isNotEmpty)
+                                    Text(
+                                        'Créé le: ${_formatDate(project['createdDate'])}'),
+                                  if (selectedItems.isNotEmpty) ...[
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        const Text(
+                                          'Type de serrage:',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.w500),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Wrap(
+                                          spacing: 4,
+                                          children: selectedItems
+                                              .map((item) => Chip(
+                                                    label: Text(item),
+                                                    labelStyle: const TextStyle(
+                                                        fontSize: 12),
+                                                    padding:
+                                                        const EdgeInsets.all(4),
+                                                    materialTapTargetSize:
+                                                        MaterialTapTargetSize
+                                                            .shrinkWrap,
+                                                  ))
+                                              .toList(),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                                const SizedBox(height: 16),
+                                if (project['form'] != null &&
+                                    project['form'].toString().isNotEmpty) ...[
+                                  const Text(
+                                    'Forme de la pièce:',
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Center(
+                                    child: Image.file(
+                                      File(project['form']),
+                                      height: 200,
+                                      fit: BoxFit.contain,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                        return const Icon(Icons.broken_image,
+                                            size: 100);
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          )
+                        : FutureBuilder<List<FileSystemEntity>>(
+                            future: Directory(project['projectPath'])
+                                .list()
+                                .toList(),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return const Center(
+                                    child: CircularProgressIndicator());
+                              }
+                              if (snapshot.hasError) {
+                                return Center(
+                                  child: Text('Erreur: ${snapshot.error}'),
+                                );
+                              }
+                              final files = snapshot.data ?? [];
+                              return ListView.builder(
+                                itemCount: files.length,
+                                itemBuilder: (context, index) {
+                                  final file = files[index];
+                                  final fileName = path.basename(file.path);
+                                  final isDirectory = file is Directory;
+                                  final extension =
+                                      path.extension(fileName).toLowerCase();
+
+                                  IconData icon;
+                                  if (isDirectory) {
+                                    icon = Icons.folder;
+                                  } else {
+                                    switch (extension) {
+                                      case '.pdf':
+                                        icon = Icons.picture_as_pdf;
+                                        break;
+                                      case '.jpg':
+                                      case '.jpeg':
+                                      case '.png':
+                                        icon = Icons.image;
+                                        break;
+                                      case '.doc':
+                                      case '.docx':
+                                        icon = Icons.description;
+                                        break;
+                                      case '.xls':
+                                      case '.xlsx':
+                                        icon = Icons.table_chart;
+                                        break;
+                                      default:
+                                        icon = Icons.insert_drive_file;
+                                    }
+                                  }
+
+                                  return ListTile(
+                                    leading: Icon(icon,
+                                        color: isDirectory
+                                            ? Colors.amber
+                                            : Colors.blueGrey),
+                                    title: Text(
+                                      fileName,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: isDirectory
+                                            ? Colors.black87
+                                            : Colors.black54,
+                                      ),
+                                    ),
+                                    subtitle: !isDirectory
+                                        ? Text(
+                                            '${(File(file.path).lengthSync() / 1024).toStringAsFixed(1)} KB',
+                                            style:
+                                                const TextStyle(fontSize: 12),
+                                          )
+                                        : null,
+                                    onTap: () {
+                                      if (isDirectory) {
+                                        // Handle directory tap
+                                      } else {
+                                        // Handle file tap
+                                      }
+                                    },
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                  ),
+                  const Divider(),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        OutlinedButton(
+                          onPressed: () => Get.back(),
+                          child: const Text('Fermer'),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.folder_open),
+                          label: const Text('Ouvrir le dossier'),
+                          onPressed: () {
+                            String projectPath = project['projectPath'] != null
+                                ? project['projectPath'].toString()
+                                : '';
+                            String copiedPath =
+                                project['copiedFolderPath'] != null
+                                    ? project['copiedFolderPath'].toString()
+                                    : '';
+
+                            String folderToOpen = copiedPath.isNotEmpty
+                                ? copiedPath
+                                : projectPath;
+
+                            if (folderToOpen.isNotEmpty) {
+                              controller.openFolder(folderToOpen);
+                            }
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.visibility),
+                          label: const Text('Consulter la pièce'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.deepPurple,
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: () {
+                            // Implementation for viewing the piece details
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-              const Divider(),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Chemin: ${project['projectPath']}',
-                        style: AppTextStyles.bodyText2,
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 2,
-                      ),
-                      if (project['ficheZollerFilename'] != null &&
-                          project['ficheZollerFilename'].toString().isNotEmpty)
-                        Text(
-                          'Fiche Zoller: ${project['ficheZollerFilename']}',
-                          style: AppTextStyles.bodyText2,
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 2,
-                        ),
-                      if (hasJsonData) ...[
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Détails du projet:',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 8),
-                        if (project['pieceName'] != null &&
-                            project['pieceName'].toString().isNotEmpty)
-                          Text('Nom de pièce: ${project['pieceName']}'),
-                        if (project['pieceDiametre'] != null &&
-                            project['pieceDiametre'].toString().isNotEmpty)
-                          Text('Diamètre: ${project['pieceDiametre']}'),
-                        if (project['materiel'] != null &&
-                            project['materiel'].toString().isNotEmpty)
-                          Text('Matériel: ${project['materiel']}'),
-                        if (project['programmeur'] != null &&
-                            project['programmeur'].toString().isNotEmpty)
-                          Text('Programmeur: ${project['programmeur']}'),
-                        if (project['createdDate'] != null &&
-                            project['createdDate'].toString().isNotEmpty)
-                          Text(
-                              'Créé le: ${_formatDate(project['createdDate'])}'),
-
-                        // Add selected items section
-                        if (selectedItems.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              const Text(
-                                'Type de serrage:',
-                                style: TextStyle(fontWeight: FontWeight.w500),
-                              ),
-                              const SizedBox(width: 8),
-                              Wrap(
-                                spacing: 4,
-                                children: selectedItems
-                                    .map((item) => Chip(
-                                          label: Text(item),
-                                          labelStyle:
-                                              const TextStyle(fontSize: 12),
-                                          padding: const EdgeInsets.all(4),
-                                          materialTapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap,
-                                        ))
-                                    .toList(),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                      const SizedBox(height: 16),
-                      if (project['form'] != null &&
-                          project['form'].toString().isNotEmpty) ...[
-                        const Text(
-                          'Forme de la pièce:',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 8),
-                        Center(
-                          child: Image.file(
-                            File(project['form']),
-                            height: 200,
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Icon(Icons.broken_image, size: 100);
-                            },
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-              const Divider(),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    OutlinedButton(
-                      onPressed: () => Get.back(),
-                      child: const Text('Fermer'),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.folder_open),
-                      label: const Text('Ouvrir le dossier'),
-                      onPressed: () {
-                        String projectPath = project['projectPath'] != null
-                            ? project['projectPath'].toString()
-                            : '';
-                        String copiedPath = project['copiedFolderPath'] != null
-                            ? project['copiedFolderPath'].toString()
-                            : '';
-
-                        String folderToOpen =
-                            copiedPath.isNotEmpty ? copiedPath : projectPath;
-
-                        if (folderToOpen.isNotEmpty) {
-                          controller.openFolder(folderToOpen);
-                        }
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.visibility),
-                      label: const Text('Consulter la pièce'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepPurple,
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: () {
-                        // Implementation for viewing the piece details
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
