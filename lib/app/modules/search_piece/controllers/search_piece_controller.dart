@@ -25,6 +25,8 @@ class SearchPieceController extends GetxController {
   final topSolideOperation = ''.obs;
   final materiel = ''.obs;
   final specification = ''.obs;
+  final selectedItems =
+      <String>[].obs; // Observable list for selected checkboxes
   final selectedItemsController = TextEditingController();
 
   final machineController = TextEditingController();
@@ -330,32 +332,34 @@ class SearchPieceController extends GetxController {
       // Get search terms from controllers (non-empty only)
       final searchTerms = <String, String>{};
 
-      if (machine.value.isNotEmpty)
+      if (machine.value.isNotEmpty) {
         searchTerms['machine'] = machine.value.toLowerCase();
+      }
 
-      if (pieceDiametre.value.isNotEmpty)
+      if (pieceDiametre.value.isNotEmpty) {
         searchTerms['pieceDiametre'] = pieceDiametre.value.toLowerCase();
-
+      }
       if (form.value.isNotEmpty) searchTerms['form'] = form.value.toLowerCase();
 
-      if (epaisseur.value.isNotEmpty)
+      if (epaisseur.value.isNotEmpty) {
         searchTerms['epaisseur'] = epaisseur.value.toLowerCase();
-
-      if (operationName.value.isNotEmpty)
+      }
+      if (operationName.value.isNotEmpty) {
         searchTerms['operationName'] = operationName.value.toLowerCase();
-
-      if (topSolideOperation.value.isNotEmpty)
+      }
+      if (topSolideOperation.value.isNotEmpty) {
         searchTerms['topSolideOperation'] =
             topSolideOperation.value.toLowerCase();
+      }
 
-      if (materiel.value.isNotEmpty)
+      if (materiel.value.isNotEmpty) {
         searchTerms['materiel'] = materiel.value.toLowerCase();
-
-      if (specification.value.isNotEmpty)
+      }
+      if (specification.value.isNotEmpty) {
         searchTerms['specification'] = specification.value.toLowerCase();
-
-      // If no search terms, return all projects
-      if (searchTerms.isEmpty) {
+      }
+      // If no search terms and no selected items, return all projects
+      if (searchTerms.isEmpty && selectedItems.isEmpty) {
         return true;
       }
 
@@ -393,6 +397,34 @@ class SearchPieceController extends GetxController {
         }
       }
 
+      // Check selected items (checkboxes)
+      if (selectedItems.isNotEmpty) {
+        // If project doesn't have selectedItems field, return false
+        if (!projectData.containsKey('selectedItems') ||
+            projectData['selectedItems'] == null ||
+            projectData['selectedItems'].toString().isEmpty) {
+          return false;
+        }
+
+        // Get the project's selectedItems value
+        String projectSelectedItems =
+            projectData['selectedItems'].toString().toLowerCase();
+
+        // Check if at least one of the selected items is in the project's selectedItems
+        bool hasAtLeastOneSelectedItem = false;
+        for (final item in selectedItems) {
+          if (projectSelectedItems.contains(item.toLowerCase())) {
+            hasAtLeastOneSelectedItem = true;
+            break; // Found one match, no need to check others
+          }
+        }
+
+        // If none of the selected items match, exclude this project
+        if (!hasAtLeastOneSelectedItem) {
+          return false;
+        }
+      }
+
       // If all search criteria match, return true
       return true;
     } catch (e) {
@@ -411,6 +443,21 @@ class SearchPieceController extends GetxController {
     topSolideOperation.value = topSolideOperationController.text.trim();
     materiel.value = materielController.text.trim();
     specification.value = specificationController.text.trim();
+
+    // Update selected items from the controller text
+    // The format is expected to be comma-separated values
+    if (selectedItemsController.text.isNotEmpty) {
+      selectedItems.clear();
+      final items = selectedItemsController.text.split(',');
+      for (var item in items) {
+        final trimmedItem = item.trim();
+        if (trimmedItem.isNotEmpty) {
+          selectedItems.add(trimmedItem);
+        }
+      }
+    } else {
+      selectedItems.clear();
+    }
   }
 
   // Method to perform search with current field values
@@ -556,7 +603,8 @@ class SearchPieceController extends GetxController {
         operationName.value.isNotEmpty ||
         topSolideOperation.value.isNotEmpty ||
         materiel.value.isNotEmpty ||
-        specification.value.isNotEmpty;
+        specification.value.isNotEmpty ||
+        selectedItems.isNotEmpty; // Add check for selected items
   }
 
   // Toggle between list and grid display templates

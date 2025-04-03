@@ -105,10 +105,79 @@ class SearchView extends GetView<SearchPieceController> {
           hint: 'Choisir l\'epaisseur de pièce',
           controller: controller.epaisseurController,
         ),
-        CheckboxGroupWidget(
-          items: ["Tirage", "Cimblot", "Manchon"],
-          controller: controller.selectedItemsController,
-          spacing: 12.0,
+        const SizedBox(height: 20),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Type de serrage:',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Container(
+              width: width,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(6),
+                color: Colors.grey.shade50,
+              ),
+              child: Obx(() => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CheckboxGroupWidget(
+                        items: const ["Tirage", "Cimblot", "Manchon"],
+                        controller: controller.selectedItemsController,
+                        spacing: 12.0,
+                      ),
+                      if (controller.selectedItems.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Row(
+                            children: [
+                              const Text(
+                                'Filtres actifs:',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              for (var item in controller.selectedItems)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 8.0),
+                                  child: Chip(
+                                    label: Text(item),
+                                    labelStyle: const TextStyle(fontSize: 11),
+                                    materialTapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    deleteIcon:
+                                        const Icon(Icons.close, size: 14),
+                                    onDeleted: () {
+                                      // Remove the item from selected items
+                                      final currentItems = controller
+                                          .selectedItemsController.text
+                                          .split(',')
+                                          .map((e) => e.trim())
+                                          .toList();
+                                      currentItems.remove(item);
+                                      controller.selectedItemsController.text =
+                                          currentItems.join(', ');
+                                      controller.updateSearchFields();
+                                      controller.performSearch();
+                                    },
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  )),
+            ),
+          ],
         ),
       ],
     );
@@ -335,13 +404,21 @@ class SearchView extends GetView<SearchPieceController> {
 
     // Define column width percentages
     final colWidths = {
-      'no': 0.05, // 5%
-      'ref': 0.15, // 15%
-      'machine': 0.12, // 12%
-      'matiere': 0.15, // 15%
-      'diametre': 0.08, // 8%
-      'forme': 0.30, // 20%
-      'specifique': 0.1479, // 15%
+      // 'no': 0.04, // 4%
+      // 'ref': 0.12, // 12%
+      // 'machine': 0.10, // 10%
+      // 'matiere': 0.12, // 12%
+      // 'diametre': 0.07, // 7%
+      // 'serrage': 0.10, // 10%
+      // 'forme': 0.25, // 25%
+      // 'specifique': 0.20, // 20%
+      'no': 0.05,
+      'ref': 0.15,
+      'machine': 0.12,
+      'matiere': 0.15,
+      'diametre': 0.08,
+      'forme': 0.30,
+      'specifique': 0.1479,
     };
 
     return Container(
@@ -367,6 +444,8 @@ class SearchView extends GetView<SearchPieceController> {
                   _buildGridHeader(
                       'Matière pièce', tableWidth * colWidths['matiere']!),
                   _buildGridHeader('Ø', tableWidth * colWidths['diametre']!),
+                  // _buildGridHeader(
+                  //     'Type serrage', tableWidth * colWidths['serrage']!),
                   _buildGridHeader(
                       'Forme de la pièce', tableWidth * colWidths['forme']!),
                   _buildGridHeader(
@@ -408,6 +487,14 @@ class SearchView extends GetView<SearchPieceController> {
             ? project['form'].toString()
             : '';
 
+    // Parse selected items from the project data
+    final selectedItemsText = project['selectedItems'] != null
+        ? project['selectedItems'].toString()
+        : '';
+    final List<String> selectedItems = selectedItemsText.isNotEmpty
+        ? selectedItemsText.split(',').map((e) => e.trim()).toList()
+        : [];
+
     return InkWell(
       onTap: () {
         // Show dialog with project details
@@ -440,6 +527,23 @@ class SearchView extends GetView<SearchPieceController> {
                 project['materiel'] ?? '', tableWidth * colWidths['matiere']!),
             _buildGridCell(project['pieceDiametre'] ?? '',
                 tableWidth * colWidths['diametre']!),
+            // _buildGridCell(
+            //   '',
+            //   tableWidth * colWidths['serrage']!,
+            //   customWidget: selectedItems.isNotEmpty
+            //       ? Column(
+            //           mainAxisAlignment: MainAxisAlignment.center,
+            //           crossAxisAlignment: CrossAxisAlignment.center,
+            //           children: selectedItems
+            //               .map((item) => Text(
+            //                     item,
+            //                     style: const TextStyle(fontSize: 11),
+            //                     textAlign: TextAlign.center,
+            //                   ))
+            //               .toList(),
+            //         )
+            //       : null,
+            // ),
             _buildGridCell(
               '',
               tableWidth * colWidths['forme']!,
@@ -497,6 +601,14 @@ class SearchView extends GetView<SearchPieceController> {
     final bool hasJsonData = project.containsKey('machine') &&
         project['machine'] != null &&
         project['machine'].toString().isNotEmpty;
+
+    // Parse selected items from the project data
+    final selectedItemsText = project['selectedItems'] != null
+        ? project['selectedItems'].toString()
+        : '';
+    final List<String> selectedItems = selectedItemsText.isNotEmpty
+        ? selectedItemsText.split(',').map((e) => e.trim()).toList()
+        : [];
 
     Get.dialog(
       Dialog(
@@ -570,6 +682,33 @@ class SearchView extends GetView<SearchPieceController> {
                             project['createdDate'].toString().isNotEmpty)
                           Text(
                               'Créé le: ${_formatDate(project['createdDate'])}'),
+
+                        // Add selected items section
+                        if (selectedItems.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Text(
+                                'Type de serrage:',
+                                style: TextStyle(fontWeight: FontWeight.w500),
+                              ),
+                              const SizedBox(width: 8),
+                              Wrap(
+                                spacing: 4,
+                                children: selectedItems
+                                    .map((item) => Chip(
+                                          label: Text(item),
+                                          labelStyle:
+                                              const TextStyle(fontSize: 12),
+                                          padding: const EdgeInsets.all(4),
+                                          materialTapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
+                                        ))
+                                    .toList(),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                       const SizedBox(height: 16),
                       if (project['form'] != null &&
