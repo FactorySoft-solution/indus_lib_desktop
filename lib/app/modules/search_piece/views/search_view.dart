@@ -610,13 +610,13 @@ class SearchView extends GetView<SearchPieceController> {
         ? selectedItemsText.split(',').map((e) => e.trim()).toList()
         : [];
 
+    bool isDetailsView = true; // Initialize view state
+
     Get.dialog(
       Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: StatefulBuilder(
-          builder: (context, setState) {
-            bool isDetailsView = true; // State variable to track current view
-
+          builder: (BuildContext context, StateSetter setState) {
             return Container(
               width: Get.width * 0.6,
               constraints:
@@ -647,6 +647,8 @@ class SearchView extends GetView<SearchPieceController> {
                                 isDetailsView ? 'Vue dossiers' : 'Vue détails',
                             onPressed: () {
                               setState(() {
+                                print(
+                                    'Switching view from ${isDetailsView ? "details" : "folder"} to ${!isDetailsView ? "details" : "folder"}');
                                 isDetailsView = !isDetailsView;
                               });
                             },
@@ -772,7 +774,8 @@ class SearchView extends GetView<SearchPieceController> {
                             ),
                           )
                         : FutureBuilder<List<FileSystemEntity>>(
-                            future: Directory(project['projectPath'])
+                            future: Directory(
+                                    project['projectPath'] + "/copied_folder")
                                 .list()
                                 .toList(),
                             builder: (context, snapshot) {
