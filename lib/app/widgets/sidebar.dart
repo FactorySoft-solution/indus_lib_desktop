@@ -98,12 +98,12 @@ class SidebarTopMenu extends StatelessWidget {
   final List<Map<String, dynamic>> sideBarItems1 = [
     {"text": 'Recherche avancée', "icon": 'assets/sidebar/search.svg'},
     {"text": 'Formes de pièces', "icon": 'assets/sidebar/piece_forms.svg'},
-    // {"text": 'Matières premières', "icon": 'assets/sidebar/material.svg'},
-    // {"text": 'Liste des programmes', "icon": 'assets/sidebar/programs.svg'},
-    {
-      "text": 'Calculateur Méthode Robert',
-      "icon": 'assets/sidebar/programs.svg'
-    },
+    {"text": 'Matières premières', "icon": 'assets/sidebar/material.svg'},
+    {"text": 'Liste des programmes', "icon": 'assets/sidebar/programs.svg'},
+    // {
+    //   "text": 'Calculateur Méthode Robert',
+    //   "icon": 'assets/sidebar/programs.svg'
+    // },
     // {"text": 'Calculateur Filtage', "icon": 'assets/sidebar/programs.svg'},
   ];
 

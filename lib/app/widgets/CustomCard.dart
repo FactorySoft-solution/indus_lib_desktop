@@ -40,11 +40,13 @@ class CustomCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget cardContent = Padding(
-      padding: padding!,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: children,
+    Widget cardContent = SingleChildScrollView(
+      child: Padding(
+        padding: padding!,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: children,
+        ),
       ),
     );
 

@@ -41,13 +41,19 @@ class RobertMethodController extends GetxController {
   final threadTypeController = TextEditingController();
   final threadDesignationController = TextEditingController();
 
-  final selectedThreadType = ''.obs;
-  final selectedThreadDesignation = ''.obs;
-  final threadDesignations = <String>[''].obs;
-  final threadData = Rx<ThreadData?>(null);
-  final hasResults = false.obs;
+  final _selectedThreadType = RxString('');
+  final _selectedThreadDesignation = RxString('');
+  final _threadDesignations = RxList<String>([]);
+  final _threadData = Rxn<ThreadData>();
+  final _hasResults = RxBool(false);
 
-  Map<String, dynamic> threadTypeData = {};
+  var threadTypeData = <String, dynamic>{};
+
+  RxString get selectedThreadType => _selectedThreadType;
+  RxString get selectedThreadDesignation => _selectedThreadDesignation;
+  RxList<String> get threadDesignations => _threadDesignations;
+  Rxn<ThreadData> get threadData => _threadData;
+  RxBool get hasResults => _hasResults;
 
   @override
   void onInit() {
@@ -69,42 +75,39 @@ class RobertMethodController extends GetxController {
       final String response =
           await rootBundle.loadString('assets/json/filetageTable.json');
       final Map<String, dynamic> data = await json.decode(response);
-      threadTypeData = data['threadType'] ?? {};
-      update(); // Notify UI to rebuild after data is loaded
+      threadTypeData = data;
+      // Initialize with all metric thread designations
+      _threadDesignations.value =
+          data.keys.where((key) => key.startsWith('M')).toList();
+      // Sort the designations for better user experience
+      _threadDesignations.sort();
     } catch (e) {
       print('Error loading thread data: $e');
+      _threadDesignations.value = [];
     }
   }
 
   void updateThreadType(String type) {
-    selectedThreadType.value = type;
-    selectedThreadDesignation.value = '';
-    threadDesignationController.text = '';
-    threadData.value = null;
-    hasResults.value = false;
-
-    // Update available designations based on selected type
-    if (type == 'Métrique') {
-      threadDesignations.value = threadTypeData.keys.toList();
-    } else {
-      threadDesignations.value = [];
-    }
-    update(); // Notify UI to rebuild
+    _selectedThreadType.value = type;
+    _selectedThreadDesignation.value = '';
+    threadDesignationController.clear();
+    _threadData.value = null;
+    _hasResults.value = false;
   }
 
   void updateThreadDesignation(String designation) {
-    selectedThreadDesignation.value = designation;
+    if (designation.isEmpty) return;
 
-    // Get thread data for selected designation
+    _selectedThreadDesignation.value = designation;
+
     if (threadTypeData.containsKey(designation)) {
       final data = threadTypeData[designation];
-      threadData.value = ThreadData.fromJson(data);
-      hasResults.value = true;
+      _threadData.value = ThreadData.fromJson(data);
+      _hasResults.value = true;
     } else {
-      threadData.value = null;
-      hasResults.value = false;
+      _threadData.value = null;
+      _hasResults.value = false;
     }
-    update(); // Notify UI to rebuild
   }
 
   void importPdfProcedure() {

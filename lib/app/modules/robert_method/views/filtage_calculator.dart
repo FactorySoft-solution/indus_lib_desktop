@@ -12,113 +12,86 @@ class FiltageCalculatorView extends GetView<RobertMethodController> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Form(
-        key: controller.formKey,
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextFormField(
-              controller: controller.diameterController,
-              decoration: const InputDecoration(
-                labelText: 'Nominal Diameter (mm)',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
-              validator: controller.validateNumber,
+            const Text(
+              'Calculateur Méthode Robert',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: controller.pitchController,
-              decoration: const InputDecoration(
-                labelText: 'Thread Pitch (mm)',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
-              validator: controller.validateNumber,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: controller.calculate,
-              child: const Text('Calculate'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Obx(() {
-              if (!controller.showResults.value) return const SizedBox.shrink();
-
-              final results = controller.results.value;
-              if (results == null) return const SizedBox.shrink();
-
-              return Column(
-                children: [
-                  CustomCard(
-                    padding: const EdgeInsets.all(16.0),
-                    children: [
-                      const Text(
-                        'Root Diameter (mm)',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 18),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Type du Filetage'),
+                    const SizedBox(height: 5),
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.4,
+                      child: CustomDropdown(
+                        label: '',
+                        hint: 'Choisir le type du filetage',
+                        items: const ['Métrique'],
+                        controller: controller.threadTypeController,
+                        height: 40.0,
+                        onChanged: (value) =>
+                            controller.updateThreadType(value),
                       ),
-                      const SizedBox(height: 8),
-                      _buildResultRow(
-                          'First pass:', results['rootDiameter']['firstPass']),
-                      _buildResultRow('Second pass:',
-                          results['rootDiameter']['secondPass']),
-                      _buildResultRow(
-                          'Third pass:', results['rootDiameter']['thirdPass']),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Clearance (mm)',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 18),
-                      ),
-                      const SizedBox(height: 8),
-                      _buildResultRow(
-                          'First pass:', results['clearance']['firstPass']),
-                      _buildResultRow(
-                          'Second pass:', results['clearance']['secondPass']),
-                      _buildResultRow(
-                          'Third pass:', results['clearance']['thirdPass']),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  if (controller.showEquation.value)
-                    CustomCard(
-                      padding: const EdgeInsets.all(16.0),
-                      children: [
-                        const Text(
-                          'Clearance Z (mm)',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 18),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(results['z']),
-                      ],
                     ),
-                  const SizedBox(height: 16),
-                  OutlinedButton(
-                    onPressed: controller.reset,
-                    child: const Text('Reset'),
-                  ),
-                ],
-              );
-            }),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Désignation du Filetage'),
+                    const SizedBox(height: 5),
+                    Obx(() => SizedBox(
+                          width: MediaQuery.of(context).size.width * 0.4,
+                          child: CustomDropdown(
+                            label: '',
+                            hint: 'Choisir la désignation du filetage',
+                            items: controller.threadDesignations,
+                            controller: controller.threadDesignationController,
+                            height: 40.0,
+                            onChanged: (value) =>
+                                controller.updateThreadDesignation(value),
+                          ),
+                        )),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Obx(() => controller.hasResults.value
+                ? _buildResults()
+                : const Center(
+                    child: Text(
+                        'Sélectionnez un type et une désignation de filetage'),
+                  )),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildResultRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildResults() {
+    return CustomCard(
+      padding: const EdgeInsets.all(16.0),
       children: [
-        Text(label),
-        Text(value),
+        Text('Type: ${controller.selectedThreadType.value}'),
+        const SizedBox(height: 10),
+        Text('Désignation: ${controller.selectedThreadDesignation.value}'),
+        const SizedBox(height: 10),
+        Text('Diamètre nominal (D1): ${controller.threadData.value?.D1 ?? ""}'),
+        const SizedBox(height: 10),
+        Text('Diamètre mineur (D3): ${controller.threadData.value?.D3 ?? ""}'),
+        const SizedBox(height: 10),
+        Text('Pas (P): ${controller.threadData.value?.P ?? ""}'),
       ],
     );
   }
