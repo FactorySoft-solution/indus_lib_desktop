@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:code_g/app/core/values/app_text_styles.dart';
 import 'package:code_g/app/widgets/CustomCard.dart';
 import 'package:code_g/app/widgets/button.dart';
@@ -7,7 +9,7 @@ import 'package:code_g/app/widgets/text_input_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:path/path.dart' as path;
-import 'dart:io';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
 import '../controllers/search_piece_controller.dart';
 import 'widgets/expandable_directory_tile.dart';
@@ -655,7 +657,7 @@ class SearchView extends GetView<SearchPieceController> {
                             },
                           ),
                           IconButton(
-                            icon: const Icon(Icons.close),
+                            icon: const Icon(Icons.close, color: Colors.red),
                             onPressed: () => Get.back(),
                           ),
                         ],
@@ -1028,30 +1030,94 @@ class SearchView extends GetView<SearchPieceController> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Aperçu PDF: ${path.basename(filePath)}',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Text(
+                      'Aperçu PDF: ${path.basename(filePath)}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Get.back(),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.open_in_new),
+                        tooltip: 'Ouvrir en plein écran',
+                        onPressed: () {
+                          Get.back();
+                          Get.dialog(
+                            Dialog.fullscreen(
+                              child: Stack(
+                                children: [
+                                  SfPdfViewer.file(
+                                    File(filePath),
+                                    enableDoubleTapZooming: true,
+                                    enableTextSelection: true,
+                                    enableDocumentLinkAnnotation: true,
+                                  ),
+                                  Positioned(
+                                    top: 16,
+                                    right: 16,
+                                    child: IconButton(
+                                      icon: const Icon(Icons.close,
+                                          color: Colors.red),
+                                      onPressed: () => Get.back(),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.red),
+                        onPressed: () => Get.back(),
+                      ),
+                    ],
                   ),
                 ],
               ),
               const Divider(),
               Expanded(
-                child: FutureBuilder(
-                  future: Future.delayed(
-                      Duration.zero), // Placeholder for PDF loading
-                  builder: (context, snapshot) {
-                    return const Center(
-                      child: Text(
-                        'PDF preview requires the flutter_pdfview package.\nPlease add it to your pubspec.yaml:\nflutter_pdfview: ^1.3.2',
-                        textAlign: TextAlign.center,
-                      ),
+                child: Builder(
+                  builder: (context) {
+                    final errorNotifier = ValueNotifier<String?>(null);
+
+                    return ValueListenableBuilder<String?>(
+                      valueListenable: errorNotifier,
+                      builder: (context, error, _) {
+                        if (error != null) {
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.error_outline,
+                                    size: 64, color: Colors.red),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Erreur lors du chargement du PDF:\n$error',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Colors.red),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+
+                        return SfPdfViewer.file(
+                          File(filePath),
+                          enableDoubleTapZooming: true,
+                          enableTextSelection: true,
+                          enableDocumentLinkAnnotation: true,
+                          onDocumentLoadFailed: (details) {
+                            errorNotifier.value = details.error;
+                            print('PDF Error: ${details.error}');
+                          },
+                        );
+                      },
                     );
                   },
                 ),
@@ -1113,7 +1179,7 @@ class SearchView extends GetView<SearchPieceController> {
                                     right: 16,
                                     child: IconButton(
                                       icon: const Icon(Icons.close,
-                                          color: Colors.white),
+                                          color: Colors.red),
                                       onPressed: () => Get.back(),
                                     ),
                                   ),
@@ -1124,7 +1190,7 @@ class SearchView extends GetView<SearchPieceController> {
                         },
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close),
+                        icon: const Icon(Icons.close, color: Colors.red),
                         onPressed: () => Get.back(),
                       ),
                     ],
