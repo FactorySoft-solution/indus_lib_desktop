@@ -10,6 +10,7 @@ import 'package:path/path.dart' as path;
 import 'dart:io';
 
 import '../controllers/search_piece_controller.dart';
+import 'widgets/expandable_directory_tile.dart';
 
 class SearchView extends GetView<SearchPieceController> {
   SearchView({super.key});
@@ -799,58 +800,52 @@ class SearchView extends GetView<SearchPieceController> {
                                   final extension =
                                       path.extension(fileName).toLowerCase();
 
-                                  IconData icon;
                                   if (isDirectory) {
-                                    icon = Icons.folder;
-                                  } else {
-                                    switch (extension) {
-                                      case '.pdf':
-                                        icon = Icons.picture_as_pdf;
-                                        break;
-                                      case '.jpg':
-                                      case '.jpeg':
-                                      case '.png':
-                                        icon = Icons.image;
-                                        break;
-                                      case '.doc':
-                                      case '.docx':
-                                        icon = Icons.description;
-                                        break;
-                                      case '.xls':
-                                      case '.xlsx':
-                                        icon = Icons.table_chart;
-                                        break;
-                                      default:
-                                        icon = Icons.insert_drive_file;
-                                    }
+                                    return _buildDirectoryTile(file, context);
+                                  }
+
+                                  // File icon logic
+                                  IconData icon;
+                                  switch (extension) {
+                                    case '.pdf':
+                                      icon = Icons.picture_as_pdf;
+                                      break;
+                                    case '.jpg':
+                                    case '.jpeg':
+                                    case '.png':
+                                      icon = Icons.image;
+                                      break;
+                                    case '.doc':
+                                    case '.docx':
+                                      icon = Icons.description;
+                                      break;
+                                    case '.xls':
+                                    case '.xlsx':
+                                      icon = Icons.table_chart;
+                                      break;
+                                    default:
+                                      icon = Icons.insert_drive_file;
                                   }
 
                                   return ListTile(
-                                    leading: Icon(icon,
-                                        color: isDirectory
-                                            ? Colors.amber
-                                            : Colors.blueGrey),
+                                    leading: Icon(icon, color: Colors.blueGrey),
                                     title: Text(
                                       fileName,
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontSize: 14,
-                                        color: isDirectory
-                                            ? Colors.black87
-                                            : Colors.black54,
+                                        color: Colors.black54,
                                       ),
                                     ),
-                                    subtitle: !isDirectory
-                                        ? Text(
-                                            '${(File(file.path).lengthSync() / 1024).toStringAsFixed(1)} KB',
-                                            style:
-                                                const TextStyle(fontSize: 12),
-                                          )
-                                        : null,
+                                    subtitle: Text(
+                                      '${(File(file.path).lengthSync() / 1024).toStringAsFixed(1)} KB',
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
                                     onTap: () {
-                                      if (isDirectory) {
-                                        // Handle directory tap
-                                      } else {
-                                        // Handle file tap
+                                      if (['.jpg', '.jpeg', '.png']
+                                          .contains(extension)) {
+                                        _showImagePreview(context, file.path);
+                                      } else if (extension == '.pdf') {
+                                        _showPdfPreview(context, file.path);
                                       }
                                     },
                                   );
@@ -1019,5 +1014,166 @@ class SearchView extends GetView<SearchPieceController> {
     } catch (e) {
       return isoDate;
     }
+  }
+
+  void _showPdfPreview(BuildContext context, String filePath) {
+    Get.dialog(
+      Dialog(
+        child: Container(
+          width: Get.width * 0.8,
+          height: Get.height * 0.8,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Aperçu PDF: ${path.basename(filePath)}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Get.back(),
+                  ),
+                ],
+              ),
+              const Divider(),
+              Expanded(
+                child: FutureBuilder(
+                  future: Future.delayed(
+                      Duration.zero), // Placeholder for PDF loading
+                  builder: (context, snapshot) {
+                    return const Center(
+                      child: Text(
+                        'PDF preview requires the flutter_pdfview package.\nPlease add it to your pubspec.yaml:\nflutter_pdfview: ^1.3.2',
+                        textAlign: TextAlign.center,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showImagePreview(BuildContext context, String imagePath) {
+    Get.dialog(
+      Dialog(
+        child: Container(
+          width: Get.width * 0.8,
+          height: Get.height * 0.8,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Aperçu image: ${path.basename(imagePath)}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.open_in_new),
+                        tooltip: 'Ouvrir dans une nouvelle fenêtre',
+                        onPressed: () {
+                          // Open in new window logic
+                          Get.back(); // Close current dialog
+                          Get.dialog(
+                            Dialog.fullscreen(
+                              child: Stack(
+                                children: [
+                                  // Full screen image with zoom capabilities
+                                  InteractiveViewer(
+                                    panEnabled: true,
+                                    boundaryMargin: const EdgeInsets.all(20),
+                                    minScale: 0.5,
+                                    maxScale: 4,
+                                    child: Center(
+                                      child: Image.file(
+                                        File(imagePath),
+                                        fit: BoxFit.contain,
+                                      ),
+                                    ),
+                                  ),
+                                  // Close button
+                                  Positioned(
+                                    top: 16,
+                                    right: 16,
+                                    child: IconButton(
+                                      icon: const Icon(Icons.close,
+                                          color: Colors.white),
+                                      onPressed: () => Get.back(),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Get.back(),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const Divider(),
+              Expanded(
+                child: InteractiveViewer(
+                  panEnabled: true,
+                  boundaryMargin: const EdgeInsets.all(20),
+                  minScale: 0.5,
+                  maxScale: 4,
+                  child: Center(
+                    child: Image.file(
+                      File(imagePath),
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.broken_image,
+                                size: 64, color: Colors.grey),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Impossible de charger l\'image\n${error.toString()}',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Add this new method to handle directory tiles
+  Widget _buildDirectoryTile(Directory directory, BuildContext context) {
+    return ExpandableDirectoryTile(
+      directory: directory,
+      onImageTap: (String path) => _showImagePreview(context, path),
+      onPdfTap: (String path) => _showPdfPreview(context, path),
+    );
   }
 }
