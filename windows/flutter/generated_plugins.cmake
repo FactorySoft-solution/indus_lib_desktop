@@ -9,6 +9,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   pdfx
   syncfusion_pdfviewer_windows
   url_launcher_windows
+  webview_windows
   window_size
 )
 

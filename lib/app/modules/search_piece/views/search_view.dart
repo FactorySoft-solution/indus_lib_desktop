@@ -1,21 +1,68 @@
 import 'dart:io';
-
+import 'dart:convert';
+import 'package:excel/excel.dart' hide Border, Stack, Row, Column;
+import 'package:csv/csv.dart';
+import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
+import 'package:archive/archive.dart';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:path/path.dart' as path;
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:code_g/app/core/values/app_text_styles.dart';
 import 'package:code_g/app/widgets/CustomCard.dart';
 import 'package:code_g/app/widgets/button.dart';
 import 'package:code_g/app/widgets/checkbox_group_widget.dart';
 import 'package:code_g/app/widgets/jsonDropDown.dart';
 import 'package:code_g/app/widgets/text_input_widget.dart';
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:path/path.dart' as path;
-import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
+import 'package:webview_windows/webview_windows.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../controllers/search_piece_controller.dart';
 import 'widgets/expandable_directory_tile.dart';
 
 class SearchView extends GetView<SearchPieceController> {
-  SearchView({super.key});
+  SearchView({super.key}) {
+    // Initialize WebView based on platform
+    if (Platform.isAndroid) {
+      WebViewPlatform.instance = AndroidWebViewPlatform();
+    } else if (Platform.isIOS) {
+      WebViewPlatform.instance = WebKitWebViewPlatform();
+    } else if (Platform.isWindows) {
+      _initWindowsWebView();
+    }
+  }
+
+  // Windows WebView controller
+  final _windowsWebViewController = WebviewController();
+  bool _windowsWebViewInitialized = false;
+
+  Future<void> _initWindowsWebView() async {
+    try {
+      if (!_windowsWebViewInitialized) {
+        await _windowsWebViewController.initialize();
+        await _windowsWebViewController.setBackgroundColor(Colors.transparent);
+        await _windowsWebViewController
+            .setPopupWindowPolicy(WebviewPopupWindowPolicy.deny);
+        _windowsWebViewInitialized = true;
+      }
+    } catch (e) {
+      print('Failed to initialize Windows WebView: $e');
+      _windowsWebViewInitialized = false;
+      Get.snackbar(
+        'Erreur',
+        'Impossible d\'initialiser le visualiseur de documents: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 5),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -808,7 +855,7 @@ class SearchView extends GetView<SearchPieceController> {
 
                                   // File icon logic
                                   IconData icon;
-                                  switch (extension) {
+                                  switch (extension.toLowerCase()) {
                                     case '.pdf':
                                       icon = Icons.picture_as_pdf;
                                       break;
@@ -817,12 +864,17 @@ class SearchView extends GetView<SearchPieceController> {
                                     case '.png':
                                       icon = Icons.image;
                                       break;
+                                    case '.arc':
+                                    case '.cam':
+                                      icon = Icons.code;
+                                      break;
                                     case '.doc':
                                     case '.docx':
                                       icon = Icons.description;
                                       break;
                                     case '.xls':
                                     case '.xlsx':
+                                    case '.csv':
                                       icon = Icons.table_chart;
                                       break;
                                     default:
@@ -843,11 +895,39 @@ class SearchView extends GetView<SearchPieceController> {
                                       style: const TextStyle(fontSize: 12),
                                     ),
                                     onTap: () {
+                                      final lowerExt = extension.toLowerCase();
+                                      print(
+                                          'File tapped: $fileName with extension: $lowerExt'); // Debug print
                                       if (['.jpg', '.jpeg', '.png']
-                                          .contains(extension)) {
+                                          .contains(lowerExt)) {
+                                        print(
+                                            'Opening image preview'); // Debug print
                                         _showImagePreview(context, file.path);
-                                      } else if (extension == '.pdf') {
+                                      } else if (lowerExt == '.pdf') {
+                                        print(
+                                            'Opening PDF preview'); // Debug print
                                         _showPdfPreview(context, file.path);
+                                      } else if (['.arc', '.cam']
+                                          .contains(lowerExt)) {
+                                        print(
+                                            'Opening ARC file preview'); // Debug print
+                                        _showArcFilePreview(context, file.path);
+                                      } else if (['.csv'].contains(lowerExt)) {
+                                        print(
+                                            'Attempting to open CSV preview for: ${file.path}'); // Debug print
+                                        _showCsvPreview(context, file.path);
+                                      } else if (['.xlsx', '.xls']
+                                          .contains(lowerExt)) {
+                                        print(
+                                            'Opening Excel preview'); // Debug print
+                                        _showExcelPreview(context, file.path);
+                                      } else if (['.docx'].contains(lowerExt)) {
+                                        print(
+                                            'Opening DOCX preview'); // Debug print
+                                        _showDocxPreview(context, file.path);
+                                      } else {
+                                        print(
+                                            'No preview handler for extension: $lowerExt'); // Debug print
                                       }
                                     },
                                   );
@@ -1241,5 +1321,638 @@ class SearchView extends GetView<SearchPieceController> {
       onImageTap: (String path) => _showImagePreview(context, path),
       onPdfTap: (String path) => _showPdfPreview(context, path),
     );
+  }
+
+  // Add this new method for ARC file preview
+  void _showArcFilePreview(BuildContext context, String filePath) {
+    Get.dialog(
+      Dialog(
+        child: Container(
+          width: Get.width * 0.8,
+          height: Get.height * 0.8,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Code source: ${path.basename(filePath)}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.copy),
+                        tooltip: 'Copier le code',
+                        onPressed: () async {
+                          final content = await File(filePath).readAsString();
+                          await Clipboard.setData(ClipboardData(text: content));
+                          Get.snackbar(
+                            'Succès',
+                            'Code copié dans le presse-papiers',
+                            snackPosition: SnackPosition.BOTTOM,
+                            backgroundColor: Colors.green,
+                            colorText: Colors.white,
+                            duration: const Duration(seconds: 2),
+                          );
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.open_in_new),
+                        tooltip: 'Ouvrir en plein écran',
+                        onPressed: () {
+                          Get.back();
+                          Get.dialog(
+                            Dialog.fullscreen(
+                              child: Stack(
+                                children: [
+                                  FutureBuilder<String>(
+                                    future: File(filePath).readAsString(),
+                                    builder: (context, snapshot) {
+                                      if (snapshot.connectionState ==
+                                          ConnectionState.waiting) {
+                                        return const Center(
+                                            child: CircularProgressIndicator());
+                                      }
+                                      if (snapshot.hasError) {
+                                        return Center(
+                                          child:
+                                              Text('Erreur: ${snapshot.error}'),
+                                        );
+                                      }
+                                      return Container(
+                                        color: Colors.grey[900],
+                                        padding: const EdgeInsets.all(16),
+                                        child: SingleChildScrollView(
+                                          child: SelectableText(
+                                            snapshot.data ?? '',
+                                            style: const TextStyle(
+                                              fontFamily: 'monospace',
+                                              fontSize: 14,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  Positioned(
+                                    top: 16,
+                                    right: 16,
+                                    child: Row(
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.copy,
+                                              color: Colors.white),
+                                          tooltip: 'Copier le code',
+                                          onPressed: () async {
+                                            final content = await File(filePath)
+                                                .readAsString();
+                                            await Clipboard.setData(
+                                                ClipboardData(text: content));
+                                            Get.snackbar(
+                                              'Succès',
+                                              'Code copié dans le presse-papiers',
+                                              snackPosition:
+                                                  SnackPosition.BOTTOM,
+                                              backgroundColor: Colors.green,
+                                              colorText: Colors.white,
+                                              duration:
+                                                  const Duration(seconds: 2),
+                                            );
+                                          },
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.close,
+                                              color: Colors.red),
+                                          onPressed: () => Get.back(),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.red),
+                        onPressed: () => Get.back(),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const Divider(),
+              Expanded(
+                child: FutureBuilder<String>(
+                  future: File(filePath).readAsString(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.error_outline,
+                                size: 64, color: Colors.red),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Erreur lors de la lecture du fichier:\n${snapshot.error}',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: Colors.red),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    return Container(
+                      color: Colors.grey[900],
+                      padding: const EdgeInsets.all(16),
+                      child: SingleChildScrollView(
+                        child: SelectableText(
+                          snapshot.data ?? '',
+                          style: const TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 14,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Add new methods for file previews
+  void _showCsvPreview(BuildContext context, String filePath) {
+    print('Opening CSV file: $filePath'); // Debug print
+
+    Get.dialog(
+      Dialog(
+        child: Container(
+          width: Get.width * 0.8,
+          height: Get.height * 0.8,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Aperçu CSV: ${path.basename(filePath)}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.open_in_browser),
+                        tooltip: 'Ouvrir dans Excel',
+                        onPressed: () async {
+                          try {
+                            print(
+                                'Attempting to open CSV in system app'); // Debug print
+                            final uri = Uri.file(filePath);
+                            if (await canLaunchUrl(uri)) {
+                              await launchUrl(uri);
+                            } else {
+                              throw 'Impossible d\'ouvrir le fichier';
+                            }
+                          } catch (e) {
+                            print(
+                                'Error opening CSV in system app: $e'); // Debug print
+                            Get.snackbar(
+                              'Erreur',
+                              'Impossible d\'ouvrir le fichier: $e',
+                              snackPosition: SnackPosition.BOTTOM,
+                              backgroundColor: Colors.red,
+                              colorText: Colors.white,
+                            );
+                          }
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.red),
+                        onPressed: () => Get.back(),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const Divider(),
+              Expanded(
+                child: FutureBuilder<String>(
+                  future: () async {
+                    try {
+                      print('Reading CSV file content'); // Debug print
+                      final content = await File(filePath).readAsString();
+                      print(
+                          'CSV content length: ${content.length}'); // Debug print
+                      return content;
+                    } catch (e) {
+                      print('Error reading CSV file: $e'); // Debug print
+                      rethrow;
+                    }
+                  }(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      print(
+                          'Error in FutureBuilder: ${snapshot.error}'); // Debug print
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.error_outline,
+                                size: 64, color: Colors.red),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Erreur lors de la lecture du fichier:\n${snapshot.error}',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: Colors.red),
+                            ),
+                            const SizedBox(height: 24),
+                            ElevatedButton.icon(
+                              icon: const Icon(Icons.open_in_new),
+                              label: const Text('Ouvrir dans Excel'),
+                              onPressed: () async {
+                                try {
+                                  final uri = Uri.file(filePath);
+                                  if (await canLaunchUrl(uri)) {
+                                    await launchUrl(uri);
+                                  } else {
+                                    throw 'Impossible d\'ouvrir le fichier';
+                                  }
+                                } catch (e) {
+                                  Get.snackbar(
+                                    'Erreur',
+                                    'Impossible d\'ouvrir le fichier: $e',
+                                    snackPosition: SnackPosition.BOTTOM,
+                                    backgroundColor: Colors.red,
+                                    colorText: Colors.white,
+                                  );
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    try {
+                      print('Parsing CSV content'); // Debug print
+                      final csvData = const CsvToListConverter(
+                        shouldParseNumbers: true,
+                        allowInvalid: true,
+                        fieldDelimiter: ';', // Try semicolon as delimiter
+                      ).convert(snapshot.data!);
+
+                      print('CSV rows: ${csvData.length}'); // Debug print
+                      if (csvData.isEmpty) {
+                        // Try with comma delimiter if no data found
+                        print('Retrying with comma delimiter'); // Debug print
+                        final csvDataComma = const CsvToListConverter(
+                          shouldParseNumbers: true,
+                          allowInvalid: true,
+                          fieldDelimiter: ',',
+                        ).convert(snapshot.data!);
+
+                        if (csvDataComma.isNotEmpty) {
+                          csvData.addAll(csvDataComma);
+                        }
+                      }
+
+                      if (csvData.isEmpty) {
+                        return const Center(child: Text('Fichier vide'));
+                      }
+
+                      print(
+                          'First row columns: ${csvData[0].length}'); // Debug print
+                      return SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: SingleChildScrollView(
+                          child: DataTable(
+                            columns: List<DataColumn>.generate(
+                              csvData[0].length,
+                              (index) => DataColumn(
+                                label: Text(
+                                  csvData[0][index]?.toString() ?? '',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
+                            rows: csvData.skip(1).map<DataRow>((row) {
+                              return DataRow(
+                                cells: List<DataCell>.generate(
+                                  row.length,
+                                  (index) => DataCell(
+                                    Text(
+                                      row[index]?.toString() ?? '',
+                                      style: const TextStyle(fontSize: 13),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      );
+                    } catch (e) {
+                      print('Error parsing CSV: $e'); // Debug print
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.error_outline,
+                                size: 64, color: Colors.red),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Erreur de format CSV:\n$e',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: Colors.red),
+                            ),
+                            const SizedBox(height: 24),
+                            ElevatedButton.icon(
+                              icon: const Icon(Icons.open_in_new),
+                              label: const Text('Ouvrir dans Excel'),
+                              onPressed: () async {
+                                try {
+                                  final uri = Uri.file(filePath);
+                                  if (await canLaunchUrl(uri)) {
+                                    await launchUrl(uri);
+                                  } else {
+                                    throw 'Impossible d\'ouvrir le fichier';
+                                  }
+                                } catch (e) {
+                                  Get.snackbar(
+                                    'Erreur',
+                                    'Impossible d\'ouvrir le fichier: $e',
+                                    snackPosition: SnackPosition.BOTTOM,
+                                    backgroundColor: Colors.red,
+                                    colorText: Colors.white,
+                                  );
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showExcelPreview(BuildContext context, String filePath) {
+    Get.dialog(
+      Dialog(
+        child: Container(
+          width: Get.width * 0.8,
+          height: Get.height * 0.8,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Aperçu Excel: ${path.basename(filePath)}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.red),
+                    onPressed: () => Get.back(),
+                  ),
+                ],
+              ),
+              const Divider(),
+              Expanded(
+                child: FutureBuilder<List<List<dynamic>>>(
+                  future: () async {
+                    final bytes = await File(filePath).readAsBytes();
+                    final excel = Excel.decodeBytes(bytes);
+                    final sheet = excel.tables[excel.tables.keys.first]!;
+
+                    List<List<dynamic>> data = [];
+                    for (var row in sheet.rows) {
+                      data.add(row.map((cell) => cell?.value ?? '').toList());
+                    }
+                    return data;
+                  }(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.error_outline,
+                                size: 64, color: Colors.red),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Erreur lors de la lecture du fichier:\n${snapshot.error}',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: Colors.red),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    final data = snapshot.data!;
+                    if (data.isEmpty)
+                      return const Center(child: Text('Fichier vide'));
+
+                    return SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: SingleChildScrollView(
+                        child: DataTable(
+                          columns: List<DataColumn>.generate(
+                            data[0].length,
+                            (index) => DataColumn(
+                              label: Text(
+                                data[0][index].toString(),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                          rows: data.skip(1).map<DataRow>((row) {
+                            return DataRow(
+                              cells: List<DataCell>.generate(
+                                row.length,
+                                (index) => DataCell(
+                                  Text(row[index].toString()),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showDocxPreview(BuildContext context, String filePath) async {
+    try {
+      Get.dialog(
+        Dialog(
+          child: Container(
+            width: Get.width * 0.8,
+            height: Get.height * 0.8,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Aperçu Word: ${path.basename(filePath)}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.open_in_browser),
+                          tooltip: 'Ouvrir dans Word',
+                          onPressed: () async {
+                            try {
+                              final uri = Uri.file(filePath);
+                              if (await canLaunchUrl(uri)) {
+                                await launchUrl(uri);
+                              } else {
+                                throw 'Impossible d\'ouvrir le fichier';
+                              }
+                            } catch (e) {
+                              Get.snackbar(
+                                'Erreur',
+                                'Impossible d\'ouvrir le fichier: $e',
+                                snackPosition: SnackPosition.BOTTOM,
+                                backgroundColor: Colors.red,
+                                colorText: Colors.white,
+                              );
+                            }
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.red),
+                          onPressed: () => Get.back(),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const Divider(),
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.description,
+                            size: 64, color: Colors.blue),
+                        const SizedBox(height: 16),
+                        Text(
+                          path.basename(filePath),
+                          style: const TextStyle(fontSize: 16),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.open_in_new),
+                          label: const Text('Ouvrir dans Word'),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 12),
+                          ),
+                          onPressed: () async {
+                            try {
+                              final uri = Uri.file(filePath);
+                              if (await canLaunchUrl(uri)) {
+                                await launchUrl(uri);
+                              } else {
+                                throw 'Impossible d\'ouvrir le fichier';
+                              }
+                            } catch (e) {
+                              Get.snackbar(
+                                'Erreur',
+                                'Impossible d\'ouvrir le fichier: $e',
+                                snackPosition: SnackPosition.BOTTOM,
+                                backgroundColor: Colors.red,
+                                colorText: Colors.white,
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      print('Error showing DOCX preview: $e');
+      Get.snackbar(
+        'Erreur',
+        'Impossible de charger le document: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 5),
+      );
+    }
   }
 }
