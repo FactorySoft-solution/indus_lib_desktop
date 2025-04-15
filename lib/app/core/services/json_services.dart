@@ -64,37 +64,37 @@ class JsonServices {
 
   Future<Map<String, dynamic>> loadIndiceJson() async {
     final indiceTable =
-        await loadJsonFromAssets('assets/json/filtage/indicePIECE.json');
+        await loadJsonFromAssets('assets/json/indicePIECE.json');
     return indiceTable;
   }
 
   Future<Map<String, dynamic>> loadMachineJson() async {
     final machineTable =
-        await loadJsonFromAssets('assets/json/filtage/listeMACHINE.json');
+        await loadJsonFromAssets('assets/json/listeMACHINE.json');
     return machineTable;
   }
 
   Future<Map<String, dynamic>> loadMechoireJson() async {
     final mechoireJson =
-        await loadJsonFromAssets('assets/json/filtagemachoireEJECTION.json');
+        await loadJsonFromAssets('assets/json/machoireEJECTION.json');
     return mechoireJson;
   }
 
   Future<Map<String, dynamic>> loadProgrammerJson() async {
     final programmerJson =
-        await loadJsonFromAssets('assets/json/filtagelistePROGRAMMEUR.json');
+        await loadJsonFromAssets('assets/json/listePROGRAMMEUR.json');
     return programmerJson;
   }
 
   Future<Map<String, dynamic>> loadArrosageJson() async {
     final arrosageJson =
-        await loadJsonFromAssets('assets/json/filtagearrosage_type.json');
+        await loadJsonFromAssets('assets/json/arrosage_type.json');
     return arrosageJson;
   }
 
   Future<Map<String, dynamic>> loadTopSolideJson() async {
-    final topSolideJson = await loadJsonFromAssets(
-        'assets/json/filtagetopSolide_operations.json');
+    final topSolideJson =
+        await loadJsonFromAssets('assets/json/topSolide_operations.json');
     return topSolideJson;
   }
 }
