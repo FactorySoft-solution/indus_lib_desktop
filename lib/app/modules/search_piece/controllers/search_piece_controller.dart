@@ -1,4 +1,5 @@
 import 'package:code_g/app/core/services/files_services.dart';
+import 'package:code_g/app/core/services/json_services.dart';
 import 'package:code_g/app/core/services/shared_service.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +11,7 @@ import 'package:path/path.dart' as path;
 class SearchPieceController extends GetxController {
   final Logger logger = new Logger();
   final SharedService sharedService = SharedService();
+  final JsonServices jsonServices = JsonServices();
   final FilesServices filesServices = new FilesServices();
 
   // Search results
@@ -76,8 +78,8 @@ class SearchPieceController extends GetxController {
 
   Future<List<dynamic>> extractMachineJsonData() async {
     try {
-      final Map<String, dynamic> fetchedJsonData = await sharedService
-          .loadJsonFromAssets('assets/json/listeMACHINE.json');
+      final Map<String, dynamic> fetchedJsonData =
+          await jsonServices.loadMachineJson();
       var newData = [...fetchedJsonData["contenu"][0]["machines"]];
 
       // Sort machines alphabetically by name
@@ -96,8 +98,8 @@ class SearchPieceController extends GetxController {
 
   Future<List<dynamic>> extractMechoireJsonData() async {
     try {
-      final Map<String, dynamic> fetchedJsonData = await sharedService
-          .loadJsonFromAssets('assets/json/machoireEJECTION.json');
+      final Map<String, dynamic> fetchedJsonData =
+          await jsonServices.loadMechoireJson();
       var newData = [...fetchedJsonData["contenu"][0]["types"]];
 
       // Sort types alphabetically
@@ -116,8 +118,8 @@ class SearchPieceController extends GetxController {
 
   Future<List<dynamic>> extractProgrammersJsonData() async {
     try {
-      final Map<String, dynamic> fetchedJsonData = await sharedService
-          .loadJsonFromAssets('assets/json/listePROGRAMMEUR.json');
+      final Map<String, dynamic> fetchedJsonData =
+          await jsonServices.loadProgrammerJson();
       var newData = [...fetchedJsonData["contenu"]];
 
       // Sort programmers alphabetically by name
@@ -136,8 +138,8 @@ class SearchPieceController extends GetxController {
 
   Future<List<dynamic>> extractArrosageTypesJsonData() async {
     try {
-      final Map<String, dynamic> fetchedJsonData = await sharedService
-          .loadJsonFromAssets('assets/json/arrosage_type.json');
+      final Map<String, dynamic> fetchedJsonData =
+          await jsonServices.loadArrosageJson();
 
       var newData = [...fetchedJsonData["contenu"]];
 
@@ -157,8 +159,8 @@ class SearchPieceController extends GetxController {
 
   Future<List<dynamic>> extractTopSolideOperationsJsonData() async {
     try {
-      final Map<String, dynamic> fetchedJsonData = await sharedService
-          .loadJsonFromAssets('assets/json/topSolide_operations.json');
+      final Map<String, dynamic> fetchedJsonData =
+          await jsonServices.loadTopSolideJson();
       var newData = [...fetchedJsonData["contenu"]];
 
       // Sort operations alphabetically by name
@@ -173,18 +175,6 @@ class SearchPieceController extends GetxController {
       print('Error: $e');
       return [];
     }
-  }
-
-  Future<List<dynamic>> extractOperationsData() async {
-    // try {
-    //   var newData =
-    //       sharedService.extractAllOperations(fileZJsonData.value, "operation");
-    //   return newData;
-    // } catch (e) {
-    //   print('Error: $e');
-    //   return [];
-    // }
-    return [];
   }
 
   Future<List<Map<String, dynamic>>> extractDiametreJsonData() async {

@@ -9,11 +9,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:code_g/main.dart';
+import 'package:code_g/app/core/config/app_config.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    final mockConfig = AppConfig(
+      appName: 'Test App',
+      apiBaseUrl: 'https://test.com',
+      debugMode: true,
+      appVersion: '1.0.0',
+    );
+
+    await tester.pumpWidget(MyApp(config: mockConfig));
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);

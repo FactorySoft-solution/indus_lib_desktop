@@ -1,7 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
-import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
+
 import 'package:logger/logger.dart';
 
 class SharedService {
@@ -9,46 +7,6 @@ class SharedService {
   factory SharedService() => _instance;
   final Logger logger = new Logger();
   SharedService._internal();
-
-  /// Load JSON from assets
-  Future<Map<String, dynamic>> loadJsonFromAssets(String assetPath) async {
-    try {
-      final String jsonString = await rootBundle.loadString(assetPath);
-      final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
-      return jsonData;
-    } catch (e) {
-      throw Exception('Error loading JSON from assets: $e');
-    }
-  }
-
-  /// Load JSON from a remote URL
-  Future<Map<String, dynamic>> loadJsonFromUrl(String url) async {
-    try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body) as Map<String, dynamic>;
-      } else {
-        throw Exception('Failed to load JSON from URL: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Error loading JSON from URL: $e');
-    }
-  }
-
-  /// Read JSON file from filesystem
-  Future<Map<String, dynamic>> readJsonFile(String filePath) async {
-    try {
-      final file = File(filePath);
-      if (!await file.exists()) {
-        throw Exception('File does not exist: $filePath');
-      }
-      final String jsonString = await file.readAsString();
-      return jsonDecode(jsonString) as Map<String, dynamic>;
-    } catch (e) {
-      logger.e('Error reading JSON file: $e');
-      throw Exception('Error reading JSON file: $e');
-    }
-  }
 
   Map<String, dynamic>? searchInArray(List<String> array, String searchKey) {
     for (int i = 0; i < array.length; i++) {

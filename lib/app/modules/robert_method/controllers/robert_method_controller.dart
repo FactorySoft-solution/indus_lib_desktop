@@ -73,7 +73,7 @@ class RobertMethodController extends GetxController {
   Future<void> loadThreadData() async {
     try {
       final String response =
-          await rootBundle.loadString('assets/json/filetageTable.json');
+          await rootBundle.loadString('assets/json/filtage/filetageTable.json');
       final Map<String, dynamic> data = await json.decode(response);
       threadTypeData = data;
       // Initialize with all metric thread designations

@@ -1,16 +1,16 @@
+import 'package:code_g/app/core/services/json_services.dart';
 import 'package:code_g/app/core/services/shared_service.dart';
 import 'package:logger/logger.dart';
 
 class CalculatorService {
   Logger logger = new Logger();
   final sharedService = new SharedService();
+  final jsonServices = new JsonServices();
 
   Future<Map<String, dynamic>> calculateFiltage(
       String filetage, String machine) async {
-    final filetageTable = await sharedService
-        .loadJsonFromAssets('assets/json/filetageTable.json');
-    final machineTable =
-        await sharedService.loadJsonFromAssets('assets/json/machineTable.json');
+    final filetageTable = await jsonServices.loadFiltageJson();
+    final machineTable = await jsonServices.loadMachineTable();
 
     final filetageData = filetageTable[filetage];
     final machineData = machineTable[machine];
@@ -29,8 +29,7 @@ class CalculatorService {
       String threadType, int N, double pitch) async {
     // Thread data tables
 
-    final filetageTable = await sharedService
-        .loadJsonFromAssets('assets/json/filetageTable.json');
+    final filetageTable = await jsonServices.loadFiltageJson();
     final threadTables = filetageTable[threadType];
 
     // Get thread data
