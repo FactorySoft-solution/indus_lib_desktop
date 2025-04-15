@@ -23,6 +23,7 @@ import 'package:webview_windows/webview_windows.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../controllers/search_piece_controller.dart';
+import '../services/index.dart';
 import 'widgets/expandable_directory_tile.dart';
 
 class SearchView extends GetView<SearchPieceController> {
@@ -435,6 +436,92 @@ class SearchView extends GetView<SearchPieceController> {
                               print("No valid folder path found to open");
                             }
                           },
+                        ),
+                        const SizedBox(width: 8),
+                        TextButton(
+                          onPressed: () async {
+                            if (project != null) {
+                              await PinceSearchService
+                                  .searchPinceInProjectArcFiles(
+                                      context, project);
+                            } else {
+                              Get.snackbar(
+                                'Erreur',
+                                'Aucun projet sélectionné',
+                                snackPosition: SnackPosition.BOTTOM,
+                                backgroundColor: Colors.red,
+                                colorText: Colors.white,
+                              );
+                            }
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                          ),
+                          child: const Text('Rechercher PINCES'),
+                        ),
+                        const SizedBox(width: 8),
+                        TextButton(
+                          onPressed: () async {
+                            if (project != null) {
+                              final folderPath =
+                                  PinceSearchService.getFolderPathFromProject(
+                                      project);
+                              if (folderPath.isNotEmpty) {
+                                try {
+                                  PinceSearchService.showLoadingIndicator();
+                                  final pinceFiles = await PinceSearchService
+                                      .findPinceFilenames(folderPath);
+                                  PinceSearchService.hideLoadingIndicator();
+
+                                  if (pinceFiles.isNotEmpty) {
+                                    _showFileSelectionDialog(
+                                        context, pinceFiles);
+                                  } else {
+                                    Get.snackbar(
+                                      'Information',
+                                      'Aucun fichier .arc avec "PINCE" trouvé',
+                                      snackPosition: SnackPosition.BOTTOM,
+                                    );
+                                  }
+                                } catch (e) {
+                                  PinceSearchService.hideLoadingIndicator();
+                                  Get.snackbar(
+                                    'Erreur',
+                                    'Erreur lors de la recherche: $e',
+                                    snackPosition: SnackPosition.BOTTOM,
+                                    backgroundColor: Colors.red,
+                                    colorText: Colors.white,
+                                  );
+                                }
+                              } else {
+                                Get.snackbar(
+                                  'Erreur',
+                                  'Aucun chemin de dossier valide trouvé',
+                                  snackPosition: SnackPosition.BOTTOM,
+                                  backgroundColor: Colors.red,
+                                  colorText: Colors.white,
+                                );
+                              }
+                            } else {
+                              Get.snackbar(
+                                'Erreur',
+                                'Aucun projet sélectionné',
+                                snackPosition: SnackPosition.BOTTOM,
+                                backgroundColor: Colors.red,
+                                colorText: Colors.white,
+                              );
+                            }
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                          ),
+                          child: const Text('Voir Fichier Complet'),
                         ),
                       ],
                     ),
@@ -1314,7 +1401,7 @@ class SearchView extends GetView<SearchPieceController> {
     );
   }
 
-  // Add this new method to handle directory tiles
+  // Add this method to handle directory tiles
   Widget _buildDirectoryTile(Directory directory, BuildContext context) {
     return ExpandableDirectoryTile(
       directory: directory,
@@ -1323,181 +1410,9 @@ class SearchView extends GetView<SearchPieceController> {
     );
   }
 
-  // Add this new method for ARC file preview
+  // Add this new method to simplify the process of showing arc files
   void _showArcFilePreview(BuildContext context, String filePath) {
-    Get.dialog(
-      Dialog(
-        child: Container(
-          width: Get.width * 0.8,
-          height: Get.height * 0.8,
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Code source: ${path.basename(filePath)}',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.copy),
-                        tooltip: 'Copier le code',
-                        onPressed: () async {
-                          final content = await File(filePath).readAsString();
-                          await Clipboard.setData(ClipboardData(text: content));
-                          Get.snackbar(
-                            'Succès',
-                            'Code copié dans le presse-papiers',
-                            snackPosition: SnackPosition.BOTTOM,
-                            backgroundColor: Colors.green,
-                            colorText: Colors.white,
-                            duration: const Duration(seconds: 2),
-                          );
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.open_in_new),
-                        tooltip: 'Ouvrir en plein écran',
-                        onPressed: () {
-                          Get.back();
-                          Get.dialog(
-                            Dialog.fullscreen(
-                              child: Stack(
-                                children: [
-                                  FutureBuilder<String>(
-                                    future: File(filePath).readAsString(),
-                                    builder: (context, snapshot) {
-                                      if (snapshot.connectionState ==
-                                          ConnectionState.waiting) {
-                                        return const Center(
-                                            child: CircularProgressIndicator());
-                                      }
-                                      if (snapshot.hasError) {
-                                        return Center(
-                                          child:
-                                              Text('Erreur: ${snapshot.error}'),
-                                        );
-                                      }
-                                      return Container(
-                                        color: Colors.grey[900],
-                                        padding: const EdgeInsets.all(16),
-                                        child: SingleChildScrollView(
-                                          child: SelectableText(
-                                            snapshot.data ?? '',
-                                            style: const TextStyle(
-                                              fontFamily: 'monospace',
-                                              fontSize: 14,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  Positioned(
-                                    top: 16,
-                                    right: 16,
-                                    child: Row(
-                                      children: [
-                                        IconButton(
-                                          icon: const Icon(Icons.copy,
-                                              color: Colors.white),
-                                          tooltip: 'Copier le code',
-                                          onPressed: () async {
-                                            final content = await File(filePath)
-                                                .readAsString();
-                                            await Clipboard.setData(
-                                                ClipboardData(text: content));
-                                            Get.snackbar(
-                                              'Succès',
-                                              'Code copié dans le presse-papiers',
-                                              snackPosition:
-                                                  SnackPosition.BOTTOM,
-                                              backgroundColor: Colors.green,
-                                              colorText: Colors.white,
-                                              duration:
-                                                  const Duration(seconds: 2),
-                                            );
-                                          },
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.close,
-                                              color: Colors.red),
-                                          onPressed: () => Get.back(),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.red),
-                        onPressed: () => Get.back(),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const Divider(),
-              Expanded(
-                child: FutureBuilder<String>(
-                  future: File(filePath).readAsString(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (snapshot.hasError) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.error_outline,
-                                size: 64, color: Colors.red),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Erreur lors de la lecture du fichier:\n${snapshot.error}',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(color: Colors.red),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                    return Container(
-                      color: Colors.grey[900],
-                      padding: const EdgeInsets.all(16),
-                      child: SingleChildScrollView(
-                        child: SelectableText(
-                          snapshot.data ?? '',
-                          style: const TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 14,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    FileViewService.showArcFilePreview(context, filePath);
   }
 
   // Add new methods for file previews
@@ -1954,5 +1869,71 @@ class SearchView extends GetView<SearchPieceController> {
         duration: const Duration(seconds: 5),
       );
     }
+  }
+
+  void _showFileSelectionDialog(BuildContext context, List<String> files) {
+    Get.dialog(
+      Dialog(
+        child: Container(
+          width: Get.width * 0.6,
+          height: Get.height * 0.6,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Sélectionner un fichier',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Divider(),
+              const SizedBox(height: 8),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: files.length,
+                  itemBuilder: (context, index) {
+                    final file = files[index];
+                    final fileName = path.basename(file);
+
+                    return ListTile(
+                      leading: const Icon(Icons.insert_drive_file),
+                      title: Text(fileName),
+                      subtitle: Text(
+                        file,
+                        style: const TextStyle(fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      onTap: () async {
+                        Get.back(); // Close dialog
+
+                        // Parse blocks first
+                        final blocks =
+                            await PinceSearchService.parseArcFileBlocks(file);
+
+                        // Show complete file content
+                        PinceSearchService.showCompleteFileContent(
+                            context, blocks, file);
+                      },
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Get.back(),
+                    child: const Text('Annuler'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
