@@ -54,12 +54,16 @@ class PinceSearchService {
       print('Total lines in file: ${lines.length}');
 
       // RegExp to match T followed by numbers (e.g., T1, T2, T10, etc.)
-      // Also allow for T values that come after other text like "N260 T3"
-      final tRegex = RegExp(r'T\d+');
+      // Allow T values at the start of a line or after other text like "N260 T3"
+      final tRegex = RegExp(r'(^|\s)T\d+');
 
       // Track current T value
       String currentTValue = '';
       List<String> currentBlockLines = [];
+
+      // Debug counts
+      int blockCount = 0;
+      List<String> identifiedTValues = [];
 
       for (var i = 0; i < lines.length; i++) {
         final line = lines[i].trim();
@@ -72,12 +76,19 @@ class PinceSearchService {
           // Found a new T value - save previous block if it exists
           if (currentTValue.isNotEmpty && currentBlockLines.isNotEmpty) {
             blocks[currentTValue] = List.from(currentBlockLines);
+            blockCount++;
             print(
-                'Saved block: $currentTValue with ${currentBlockLines.length} lines');
+                'Saved block $blockCount: $currentTValue with ${currentBlockLines.length} lines');
           }
 
           // Extract the T value and use it as the key
-          currentTValue = tMatches.first.group(0)!;
+          String fullMatch = tMatches.first.group(0)!;
+          currentTValue = fullMatch.trim().startsWith('T')
+              ? fullMatch.trim()
+              : fullMatch.trim().substring(fullMatch.trim().indexOf('T'));
+
+          identifiedTValues.add(currentTValue);
+          print('Found new T value: $currentTValue in line: $line');
           currentBlockLines = [line];
         } else if (currentTValue.isNotEmpty) {
           // Add line to current block
@@ -88,18 +99,53 @@ class PinceSearchService {
       // Add the last block
       if (currentTValue.isNotEmpty && currentBlockLines.isNotEmpty) {
         blocks[currentTValue] = List.from(currentBlockLines);
+        blockCount++;
         print(
-            'Saved last block: $currentTValue with ${currentBlockLines.length} lines');
+            'Saved last block $blockCount: $currentTValue with ${currentBlockLines.length} lines');
       }
 
-      print('Total blocks found: ${blocks.length}');
+      print(
+          'Total blocks found: ${blocks.length}, Identified T values: ${identifiedTValues.join(", ")}');
+
+      // If no blocks found, add a fallback to show some content
       if (blocks.isEmpty) {
         print('Warning: No blocks found in file');
 
-        // If no blocks found, add a fallback block to show something
-        if (lines.isNotEmpty) {
+        // Scan file for any T values we might have missed
+        final allTValues = <String>{};
+        for (var line in lines) {
+          final matches = RegExp(r'T\d+').allMatches(line);
+          for (var match in matches) {
+            allTValues.add(match.group(0)!);
+          }
+        }
+
+        if (allTValues.isNotEmpty) {
+          print(
+              'Found T values in file that were not extracted as blocks: ${allTValues.join(", ")}');
+
+          // Try alternate extraction algorithm - group lines by their T value references
+          for (var tValue in allTValues) {
+            final tBlockLines = <String>[];
+            for (var line in lines) {
+              if (line.contains(tValue)) {
+                tBlockLines.add(line);
+              }
+            }
+
+            if (tBlockLines.isNotEmpty) {
+              blocks[tValue] = tBlockLines;
+              print(
+                  'Created fallback block for $tValue with ${tBlockLines.length} lines');
+            }
+          }
+        }
+
+        // If still no blocks, add entire file as one block
+        if (blocks.isEmpty && lines.isNotEmpty) {
           blocks['T0'] = lines;
-          print('Added fallback block T0 with all ${lines.length} lines');
+          print(
+              'Added entire file as fallback block T0 with ${lines.length} lines');
         }
       }
 
@@ -116,11 +162,13 @@ class PinceSearchService {
         final lines = content.split('\n');
         print('Total lines in file (Latin-1): ${lines.length}');
 
-        // RegExp to match T values wherever they appear in the line
-        final tRegex = RegExp(r'T\d+');
+        // RegExp to match T values that start a line or appear after a space
+        final tRegex = RegExp(r'(^|\s)T\d+');
 
         String currentTValue = '';
         List<String> currentBlockLines = [];
+        int blockCount = 0;
+        List<String> identifiedTValues = [];
 
         for (var i = 0; i < lines.length; i++) {
           final line = lines[i].trim();
@@ -133,12 +181,19 @@ class PinceSearchService {
             // Found a new T value - save previous block if it exists
             if (currentTValue.isNotEmpty && currentBlockLines.isNotEmpty) {
               blocks[currentTValue] = List.from(currentBlockLines);
+              blockCount++;
               print(
-                  'Saved block (Latin-1): $currentTValue with ${currentBlockLines.length} lines');
+                  'Saved block $blockCount (Latin-1): $currentTValue with ${currentBlockLines.length} lines');
             }
 
             // Extract the T value and use it as the key
-            currentTValue = tMatches.first.group(0)!;
+            String fullMatch = tMatches.first.group(0)!;
+            currentTValue = fullMatch.trim().startsWith('T')
+                ? fullMatch.trim()
+                : fullMatch.trim().substring(fullMatch.trim().indexOf('T'));
+
+            identifiedTValues.add(currentTValue);
+            print('Found new T value (Latin-1): $currentTValue in line: $line');
             currentBlockLines = [line];
           } else if (currentTValue.isNotEmpty) {
             // Add line to current block
@@ -149,15 +204,52 @@ class PinceSearchService {
         // Add the last block
         if (currentTValue.isNotEmpty && currentBlockLines.isNotEmpty) {
           blocks[currentTValue] = List.from(currentBlockLines);
+          blockCount++;
           print(
-              'Saved last block (Latin-1): $currentTValue with ${currentBlockLines.length} lines');
+              'Saved last block $blockCount (Latin-1): $currentTValue with ${currentBlockLines.length} lines');
         }
 
-        print('Total blocks found (Latin-1): ${blocks.length}');
-        if (blocks.isEmpty && lines.isNotEmpty) {
-          // If no blocks found, add a fallback block to show something
-          blocks['T0'] = lines;
-          print('Added fallback block T0 with all ${lines.length} lines');
+        print(
+            'Total blocks found (Latin-1): ${blocks.length}, Identified T values: ${identifiedTValues.join(", ")}');
+
+        // If no blocks found, add a fallback
+        if (blocks.isEmpty) {
+          // Scan file for any T values we might have missed
+          final allTValues = <String>{};
+          for (var line in lines) {
+            final matches = RegExp(r'T\d+').allMatches(line);
+            for (var match in matches) {
+              allTValues.add(match.group(0)!);
+            }
+          }
+
+          if (allTValues.isNotEmpty) {
+            print(
+                'Found T values in file that were not extracted as blocks (Latin-1): ${allTValues.join(", ")}');
+
+            // Try alternate extraction algorithm - group lines by their T value references
+            for (var tValue in allTValues) {
+              final tBlockLines = <String>[];
+              for (var line in lines) {
+                if (line.contains(tValue)) {
+                  tBlockLines.add(line);
+                }
+              }
+
+              if (tBlockLines.isNotEmpty) {
+                blocks[tValue] = tBlockLines;
+                print(
+                    'Created fallback block for $tValue with ${tBlockLines.length} lines (Latin-1)');
+              }
+            }
+          }
+
+          // If still no blocks, add entire file as one block
+          if (blocks.isEmpty && lines.isNotEmpty) {
+            blocks['T0'] = lines;
+            print(
+                'Added entire file as fallback block T0 with ${lines.length} lines (Latin-1)');
+          }
         }
 
         return blocks;
