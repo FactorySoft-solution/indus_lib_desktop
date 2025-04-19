@@ -10,10 +10,10 @@ import 'package:path/path.dart' as path;
 import 'dart:convert';
 
 class CreateProjectController extends GetxController {
-  final Logger logger = new Logger();
+  final Logger logger = Logger();
   final SharedService sharedService = SharedService();
   final JsonServices jsonServices = JsonServices();
-  final FilesServices filesServices = new FilesServices();
+  final FilesServices filesServices = FilesServices();
 
   final pieceRef = TextEditingController();
   final pieceIndice = TextEditingController();
@@ -45,12 +45,13 @@ class CreateProjectController extends GetxController {
   final RxList fileZJsonData = [].obs;
   final RxString planStatus = "pending".obs;
 
-  // Method to check if all TextEditingController fields are filled
-  bool checkFilledFields(fields) {
+  final Map<String, dynamic> _jsonCache = {};
+
+  bool checkFilledFields(Map<String, TextEditingController> fields) {
     bool isAllFieldsFilled = true;
     fields.forEach((name, controller) {
       if (controller.text.isEmpty) {
-        print("Missing field: $name");
+        logger.d("Missing field: $name");
         isAllFieldsFilled = false;
       }
     });
@@ -116,6 +117,18 @@ class CreateProjectController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    _preloadCommonJsonData();
+  }
+
+  void _preloadCommonJsonData() async {
+    try {
+      await extractMachineJsonData();
+      await extractMechoireJsonData();
+      await extractIndicesJsonData();
+      await extractProgrammersJsonData();
+    } catch (e) {
+      logger.e('Error preloading JSON data: $e');
+    }
   }
 
   void handleReset(String fieldName) {
@@ -139,368 +152,422 @@ class CreateProjectController extends GetxController {
         arrosageType.clear();
         break;
       default:
-        // Handle unknown field name
         logger.w('Unknown field name for reset: $fieldName');
     }
-    update(); // Trigger UI update
+    update();
   }
 
   Future<List<dynamic>> extractIndicesJsonData() async {
+    const cacheKey = 'indiceJsonData';
     try {
+      if (_jsonCache.containsKey(cacheKey)) {
+        return _jsonCache[cacheKey];
+      }
+
       final Map<String, dynamic> fetchedJsonData =
           await jsonServices.loadIndiceJson();
       var newData = [...fetchedJsonData["contenu"]];
+      _jsonCache[cacheKey] = newData;
 
       return newData;
     } catch (e) {
-      print('Error: $e');
+      logger.e('Error extracting indices JSON data: $e');
       return [];
     }
   }
 
   Future<List<dynamic>> extractMachineJsonData() async {
+    const cacheKey = 'machineJsonData';
     try {
+      if (_jsonCache.containsKey(cacheKey)) {
+        return _jsonCache[cacheKey];
+      }
+
       final Map<String, dynamic> fetchedJsonData =
           await jsonServices.loadMachineJson();
       var newData = [...fetchedJsonData["contenu"][0]["machines"]];
 
-      // Sort machines alphabetically by name
       newData.sort((a, b) {
         final String nameA = a['nom']?.toString().toLowerCase() ?? '';
         final String nameB = b['nom']?.toString().toLowerCase() ?? '';
         return nameA.compareTo(nameB);
       });
 
+      _jsonCache[cacheKey] = newData;
       return newData;
     } catch (e) {
-      print('Error: $e');
+      logger.e('Error extracting machine JSON data: $e');
       return [];
     }
   }
 
   Future<List<dynamic>> extractMechoireJsonData() async {
+    const cacheKey = 'mechoireJsonData';
     try {
+      if (_jsonCache.containsKey(cacheKey)) {
+        return _jsonCache[cacheKey];
+      }
+
       final Map<String, dynamic> fetchedJsonData = await jsonServices
-          .loadJsonFromAssets('assets/json/filtagemachoireEJECTION.json');
+          .loadJsonFromAssets('assets/json/machoireEJECTION.json');
       var newData = [...fetchedJsonData["contenu"][0]["types"]];
 
-      // Sort types alphabetically
       newData.sort((a, b) {
         final String nameA = a.toString().toLowerCase();
         final String nameB = b.toString().toLowerCase();
         return nameA.compareTo(nameB);
       });
 
+      _jsonCache[cacheKey] = newData;
       return newData;
     } catch (e) {
-      print('Error: $e');
+      logger.e('Error extracting mechoire JSON data: $e');
       return [];
     }
   }
 
   Future<List<dynamic>> extractProgrammersJsonData() async {
+    const cacheKey = 'programmersJsonData';
     try {
+      if (_jsonCache.containsKey(cacheKey)) {
+        return _jsonCache[cacheKey];
+      }
+
       final Map<String, dynamic> fetchedJsonData =
           await jsonServices.loadProgrammerJson();
       var newData = [...fetchedJsonData["contenu"]];
 
-      // Sort the programmers data alphabetically by name
       newData.sort((a, b) {
         final String nameA = a['nom']?.toString().toLowerCase() ?? '';
         final String nameB = b['nom']?.toString().toLowerCase() ?? '';
         return nameA.compareTo(nameB);
       });
 
+      _jsonCache[cacheKey] = newData;
       return newData;
     } catch (e) {
-      print('Error: $e');
+      logger.e('Error extracting programmers JSON data: $e');
       return [];
     }
   }
 
   Future<List<dynamic>> extractArrosageTypesJsonData() async {
+    const cacheKey = 'arrosageTypesJsonData';
     try {
+      if (_jsonCache.containsKey(cacheKey)) {
+        return _jsonCache[cacheKey];
+      }
+
       final Map<String, dynamic> fetchedJsonData =
           await jsonServices.loadArrosageJson();
-
       var newData = [...fetchedJsonData["contenu"]];
 
-      // Sort arrosage types alphabetically by name
       newData.sort((a, b) {
         final String nameA = a['name']?.toString().toLowerCase() ?? '';
         final String nameB = b['name']?.toString().toLowerCase() ?? '';
         return nameA.compareTo(nameB);
       });
 
+      _jsonCache[cacheKey] = newData;
       return newData;
     } catch (e) {
-      print('Error: $e');
+      logger.e('Error extracting arrosage types JSON data: $e');
       return [];
     }
   }
 
   Future<List<dynamic>> extractTopSolideOperationsJsonData() async {
+    const cacheKey = 'topSolideOperationsJsonData';
     try {
+      if (_jsonCache.containsKey(cacheKey)) {
+        return _jsonCache[cacheKey];
+      }
+
       final Map<String, dynamic> fetchedJsonData =
           await jsonServices.loadTopSolideJson();
       var newData = [...fetchedJsonData["contenu"]];
 
-      // Sort operations alphabetically by name
       newData.sort((a, b) {
         final String nameA = a['name']?.toString().toLowerCase() ?? '';
         final String nameB = b['name']?.toString().toLowerCase() ?? '';
         return nameA.compareTo(nameB);
       });
 
+      _jsonCache[cacheKey] = newData;
       return newData;
     } catch (e) {
-      print('Error: $e');
+      logger.e('Error extracting top solide operations JSON data: $e');
       return [];
     }
   }
 
   Future<List<dynamic>> extractOperationsData() async {
     try {
-      var newData =
-          sharedService.extractAllOperations(fileZJsonData.value, "operation");
-      return newData;
+      if (fileZJsonData.isEmpty) {
+        return [];
+      }
+      return sharedService.extractAllOperations(fileZJsonData, "operation");
     } catch (e) {
-      print('Error: $e');
+      logger.e('Error extracting operations data: $e');
       return [];
     }
   }
 
-  updateDisplayOperation(String value) {
-    if (value.isEmpty) {
-      final data = fileZJsonData
-          .where((element) => element["operation"] == operationName.text)
-          .toList();
-      if (data.isNotEmpty) {
-        // Access description from the filtered result
-        final description = data[0]["description"];
-        displayOperation.text = description;
-      } else {
-        logger.i("No matching operation found");
+  void updateDisplayOperation(String value) {
+    try {
+      final String operationToUse =
+          value.isNotEmpty ? value : operationName.text;
+      if (operationToUse.isEmpty || fileZJsonData.isEmpty) {
+        return;
       }
-    } else {
+
       final data = fileZJsonData
-          .where((element) => element["operation"] == value)
+          .where((element) => element["operation"] == operationToUse)
           .toList();
-      if (data.isNotEmpty) {
-        // Access description from the filtered result
-        final description = data[0]["description"];
-        displayOperation.text = description;
+
+      if (data.isNotEmpty && data[0].containsKey("description")) {
+        displayOperation.text = data[0]["description"];
       } else {
-        logger.i("No matching operation found");
+        logger.i("No matching operation found or missing description");
       }
+    } catch (e) {
+      logger.e("Error updating display operation: $e");
     }
   }
 
-  String _borderColor(controllerName) {
+  String _borderColor(TextEditingController controllerName) {
     final emptyFolder = caoFilePath.text.isEmpty;
     final emptyController = controllerName.text.isEmpty;
-    var status = "pending";
+
     if (emptyFolder || emptyController) {
-      status = "error";
+      return "error";
     } else if (!emptyFolder && !emptyController) {
-      status = "success";
+      return "success";
     }
-    return status;
+    return "pending";
   }
 
-  void selectFile(selectedFile, controller) {
-    if (selectedFile != null) {
+  void selectFile(Map<String, List<String>> selectedFile,
+      TextEditingController controller) {
+    if (selectedFile == null) return;
+
+    try {
       if (selectedFile.containsKey("file")) {
         String filePath = selectedFile["file"]!.first;
         controller.text = filePath;
-      } else if (selectedFile.containsKey("files")) {
-        List<String> filePaths = selectedFile["files"]!;
-        controller.text = filePaths.first; // Example: Take the first file
-        update();
+      } else if (selectedFile.containsKey("files") &&
+          selectedFile["files"]!.isNotEmpty) {
+        controller.text = selectedFile["files"]!.first;
       }
+      update();
+    } catch (e) {
+      logger.e("Error selecting file: $e");
     }
   }
 
-  void selectFao(selectedFile) {
-    String filePath = selectedFile["file"]!.first;
-    String fileName = filePath.split('/').last;
-    if ((fileName.endsWith('.arc') || fileName.endsWith('.ARC')) &&
-        !fileName.toLowerCase().contains('pince')) {
-      selectFile(selectedFile, faoFilePath);
-      faoStatus.value = _borderColor(faoFilePath);
-      update();
-    } else {
-      // Show an error message or handle the invalid file case
-      print("Invalid file: File must end with '.arc' and not contain 'pince'.");
+  void selectFao(Map<String, List<String>> selectedFile) {
+    if (selectedFile == null ||
+        !selectedFile.containsKey("file") ||
+        selectedFile["file"]!.isEmpty) {
+      return;
+    }
+
+    try {
+      String filePath = selectedFile["file"]!.first;
+      String fileName = path.basename(filePath);
+
+      if ((fileName.toLowerCase().endsWith('.arc')) &&
+          !fileName.toLowerCase().contains('pince')) {
+        selectFile(selectedFile, faoFilePath);
+        faoStatus.value = _borderColor(faoFilePath);
+        update();
+      } else {
+        logger.w(
+            "Invalid file: File must end with '.arc' and not contain 'pince'.");
+      }
+    } catch (e) {
+      logger.e("Error selecting FAO file: $e");
     }
   }
 
-  void selectPlan(selectedFile) {
-    String filePath = selectedFile["file"]!.first;
-    String fileName = filePath.split('/').last;
-    if (fileName.toLowerCase().contains("ind") &&
-        fileName.toLowerCase().endsWith('.pdf')) {
-      selectFile(selectedFile, planFilePath);
-      planStatus.value = _borderColor(planFilePath);
-      update();
-    } else {
-      // Show an error message or handle the invalid file case
-      print("Invalid file: File must be pdf and contain 'IND'.");
+  void selectPlan(Map<String, List<String>> selectedFile) {
+    if (selectedFile == null ||
+        !selectedFile.containsKey("file") ||
+        selectedFile["file"]!.isEmpty) {
+      return;
+    }
+
+    try {
+      String filePath = selectedFile["file"]!.first;
+      String fileName = path.basename(filePath);
+
+      if (fileName.toLowerCase().contains("ind") &&
+          fileName.toLowerCase().endsWith('.pdf')) {
+        selectFile(selectedFile, planFilePath);
+        planStatus.value = _borderColor(planFilePath);
+        update();
+      } else {
+        logger.w("Invalid file: File must be PDF and contain 'IND'.");
+      }
+    } catch (e) {
+      logger.e("Error selecting plan file: $e");
     }
   }
 
-  void selectFileZ(selectedFile) async {
-    String filePath = selectedFile["file"]!.first;
-    // if (fileZPath.text.isNotEmpty) {
-    //   removeJsonFileWithSameName(fileZPath.text);
-    // }
-    fileZPath.text = filePath;
-    String fileName = filePath.split('\\').last;
-    bool isFileZ = fileName.toLowerCase().contains('fiche z');
-    bool isPdf = fileName.toLowerCase().endsWith('.pdf');
-    if (isFileZ && isPdf) {
-      selectFile(selectedFile, fileZPath);
-      fileZStatus.value = _borderColor(fileZPath);
-      update();
-      downloadFileZ(filePath);
-    } else {
-      print("Invalid file: File must be pdf and contain 'fiche z'.");
+  void selectFileZ(Map<String, List<String>> selectedFile) async {
+    if (selectedFile == null ||
+        !selectedFile.containsKey("file") ||
+        selectedFile["file"]!.isEmpty) {
+      return;
+    }
+
+    try {
+      String filePath = selectedFile["file"]!.first;
+      String fileName = path.basename(filePath);
+      bool isFileZ = fileName.toLowerCase().contains('fiche z');
+      bool isPdf = fileName.toLowerCase().endsWith('.pdf');
+
+      if (isFileZ && isPdf) {
+        fileZPath.text = filePath;
+        fileZStatus.value = _borderColor(fileZPath);
+        update();
+        await downloadFileZ(filePath);
+      } else {
+        logger.w("Invalid file: File must be PDF and contain 'fiche z'.");
+      }
+    } catch (e) {
+      logger.e("Error selecting file Z: $e");
     }
   }
 
   void selectFilesFromFolder(Map<String, List<String>>? selectedFolderFiles) {
-    if (selectedFolderFiles != null) {
-      // Save the root folder path (first directory in the list)
-      if (selectedFolderFiles.containsKey("mainDir")) {
+    if (selectedFolderFiles == null) return;
+
+    try {
+      if (selectedFolderFiles.containsKey("mainDir") &&
+          selectedFolderFiles['mainDir']!.isNotEmpty) {
         var mainDir = selectedFolderFiles['mainDir']![0];
         if (FileSystemEntity.isDirectorySync(mainDir)) {
           caoFilePath.text = mainDir;
-          caoStatus.value = _borderColor(planFilePath);
+          caoStatus.value = _borderColor(caoFilePath);
           update();
         }
       }
+
       if (selectedFolderFiles.containsKey("arc")) {
-        var arcData = selectedFolderFiles['arc'];
-        if (arcData is List) {
-          // Ensure it's a List before iterating
-          List<String> arc = List<String>.from(arcData!);
-          for (var file in arc) {
-            selectFao({
-              "file": [file]
-            });
-          }
-          update();
-        } else {
-          print("Error: 'arc' is not a list!");
+        List<String> arcFiles =
+            List<String>.from(selectedFolderFiles['arc'] ?? []);
+        for (var file in arcFiles) {
+          selectFao({
+            "file": [file]
+          });
         }
       }
 
       if (selectedFolderFiles.containsKey("pdf")) {
-        var pdfData = selectedFolderFiles['pdf'];
-        if (pdfData is List) {
-          List<String> pdf = List<String>.from(pdfData!);
-          for (var file in pdf) {
-            selectFileZ({
-              "file": [file]
-            });
-            selectPlan({
-              "file": [file]
-            });
-          }
-        } else {
-          print("Error: 'pdf' is not a list!");
+        List<String> pdfFiles =
+            List<String>.from(selectedFolderFiles['pdf'] ?? []);
+        for (var file in pdfFiles) {
+          selectFileZ({
+            "file": [file]
+          });
+          selectPlan({
+            "file": [file]
+          });
         }
       }
-      // Iterate through all files in the folder
+
       if (selectedFolderFiles.containsKey("dir")) {
-        var dirData = selectedFolderFiles['dir'];
-        if (dirData is List) {
-          List<String> dir = List<String>.from(dirData!);
-          for (var file in dir) {
-            if (FileSystemEntity.isDirectorySync(file)) {
-              // Call selectFilesFromFolder recursively for subfolders
-              var listGroup = filesServices.regroupDirectoryFilesByType(file);
-              selectFilesFromFolder(listGroup);
-            }
+        List<String> directories =
+            List<String>.from(selectedFolderFiles['dir'] ?? []);
+        for (var dir in directories) {
+          if (FileSystemEntity.isDirectorySync(dir)) {
+            var listGroup = filesServices.regroupDirectoryFilesByType(dir);
+            selectFilesFromFolder(listGroup);
           }
-        } else {
-          print("Error: 'pdf' is not a list!");
         }
       }
+    } catch (e) {
+      logger.e("Error selecting files from folder: $e");
     }
   }
 
-  void downloadFileZ(filePath) async {
-    String fileName = filePath.split('\\').last;
-    String directory = path.dirname(filePath);
-    Map<String, dynamic> structuredJson =
-        await filesServices.convertFileZHtmlToJson(filePath);
-    fileZJsonData.value = List<dynamic>.from(structuredJson["entries"]);
-    // print("fileZJsonData: ${fileZJsonData.value}");
-    machine.text =
-        structuredJson["fileName"].contains("R200") ? "R200" : "G160";
-    update();
-    await filesServices.saveContentToFile(
-        structuredJson, directory, fileName.split(".")[0], "json");
+  Future<void> downloadFileZ(String filePath) async {
+    try {
+      String fileName = path.basename(filePath);
+      String directory = path.dirname(filePath);
+
+      Map<String, dynamic> structuredJson =
+          await filesServices.convertFileZHtmlToJson(filePath);
+
+      if (structuredJson.containsKey("entries")) {
+        fileZJsonData.value = List<dynamic>.from(structuredJson["entries"]);
+      }
+
+      if (structuredJson.containsKey("fileName")) {
+        machine.text =
+            structuredJson["fileName"].contains("R200") ? "R200" : "G160";
+      }
+
+      update();
+
+      await filesServices.saveContentToFile(
+          structuredJson, directory, fileName.split(".")[0], "json");
+    } catch (e) {
+      logger.e("Error downloading file Z: $e");
+    }
   }
 
-  // Method to copy the selected folder to a new location
   void copySelectedFolder() {
-    if (caoFilePath.text.isNotEmpty) {
+    if (caoFilePath.text.isEmpty) {
+      logger.w("No CAO file path selected");
+      return;
+    }
+
+    try {
       String userProfile = Platform.environment['USERPROFILE'] ??
           '\\home\\${Platform.environment['USER']}';
       String defaultDesktopPath = "$userProfile\\Desktop\\aerobase";
       String subPath = "${pieceRef.text}\\${pieceIndice.text}\\copied_folder";
       final sourceDir = Directory(caoFilePath.text);
-
       final destinationDir = Directory(path.join(defaultDesktopPath, subPath));
-      if (sourceDir.existsSync()) {
-        try {
-          destinationDir.createSync(recursive: true);
-          filesServices.copyDirectory(sourceDir, destinationDir);
-          logger.i("All fields are filled. Files copied successfully.");
 
-          // Check for "Fiche Zoller" folder
-          final ficheZollerDir =
-              Directory(path.join(destinationDir.path, 'Fiche Zoller'));
-          if (!ficheZollerDir.existsSync()) {
-            ficheZollerDir.createSync(recursive: true);
-            logger.i("Fiche Zoller folder created.");
-          }
-
-          // Ensure fileZPath and form are copied into "Fiche Zoller"
-
-          ensureFileInDirectory(fileZPath.text, ficheZollerDir);
-          ensureFileInDirectory(form.text, ficheZollerDir);
-
-          // Remove Thumbs.db if it exists
-          removeThumbsDb(destinationDir);
-
-          // Remove JSON file with the same name if it exists
-          removeJsonFileWithSameName(fileZPath.text);
-
-          // Check for .arc or .ARC files in the destination directory
-          if (!containsArcFiles(destinationDir)) {
-            // Copy faoFilePath into the destination directory if no .arc or .ARC files are found
-            ensureFileInDirectory(faoFilePath.text, destinationDir);
-          }
-
-          // Save project data to project.json before resetting controllers
-          saveProjectDataToJson(
-              path.join(destinationDir.parent.path, 'project.json'));
-
-          // Reset all controllers on success
-          resetAllControllers();
-        } catch (e) {
-          logger.e("Error copying files: $e");
-        }
-      } else {
+      if (!sourceDir.existsSync()) {
         logger.e("Source directory does not exist.");
+        return;
       }
+
+      destinationDir.createSync(recursive: true);
+      filesServices.copyDirectory(sourceDir, destinationDir);
+      logger.i("Files copied successfully.");
+
+      final ficheZollerDir =
+          Directory(path.join(destinationDir.path, 'Fiche Zoller'));
+      if (!ficheZollerDir.existsSync()) {
+        ficheZollerDir.createSync(recursive: true);
+        logger.i("Fiche Zoller folder created.");
+      }
+
+      ensureFileInDirectory(fileZPath.text, ficheZollerDir);
+      ensureFileInDirectory(form.text, ficheZollerDir);
+
+      removeThumbsDb(destinationDir);
+      removeJsonFileWithSameName(fileZPath.text);
+
+      if (!containsArcFiles(destinationDir)) {
+        ensureFileInDirectory(faoFilePath.text, destinationDir);
+      }
+
+      saveProjectDataToJson(
+          path.join(destinationDir.parent.path, 'project.json'));
+
+      resetAllControllers();
+    } catch (e) {
+      logger.e("Error copying folder: $e");
     }
   }
 
-  void resControllers(controllers) {
+  void resControllers(List<TextEditingController> controllers) {
     for (var controller in controllers) {
       controller.clear();
     }
@@ -529,6 +596,10 @@ class CreateProjectController extends GetxController {
       planFilePath,
     ];
     resControllers(controllers);
+    caoStatus.value = "pending";
+    faoStatus.value = "pending";
+    fileZStatus.value = "pending";
+    planStatus.value = "pending";
   }
 
   void resetSecandPartControllers() {
@@ -542,72 +613,101 @@ class CreateProjectController extends GetxController {
   }
 
   void resetAllControllers() {
-    final homeController = Get.find<HomeController>();
-    resetFirstPartControllers();
-    resetSecandPartControllers();
-    homeController.activePage.value = "Ajouter une mouvelle pièce";
+    try {
+      final homeController = Get.find<HomeController>();
+      resetFirstPartControllers();
+      resetSecandPartControllers();
+      fileZJsonData.clear();
+      homeController.activePage.value = "Ajouter une mouvelle pièce";
+    } catch (e) {
+      logger.e("Error resetting controllers: $e");
+    }
   }
 
   bool containsArcFiles(Directory directory) {
-    final arcFiles = directory.listSync().where((entity) {
-      if (entity is File) {
-        final extension = path.extension(entity.path).toLowerCase();
-        return extension == '.arc';
-      }
+    try {
+      final arcFiles = directory.listSync().where((entity) {
+        if (entity is File) {
+          final extension = path.extension(entity.path).toLowerCase();
+          return extension == '.arc';
+        }
+        return false;
+      }).toList();
+      return arcFiles.isNotEmpty;
+    } catch (e) {
+      logger.e("Error checking for ARC files: $e");
       return false;
-    }).toList();
-    return arcFiles.isNotEmpty;
+    }
   }
 
   void removeJsonFileWithSameName(String filePath) {
-    final fileNameWithoutExtension = path.basenameWithoutExtension(filePath);
-    final directory = path.dirname(filePath);
-    final jsonFile =
-        File(path.join(directory, '$fileNameWithoutExtension.json'));
-    if (jsonFile.existsSync()) {
-      jsonFile.deleteSync();
-      logger.i("Removed JSON file: ${jsonFile.path}");
+    if (filePath.isEmpty) return;
+
+    try {
+      final fileNameWithoutExtension = path.basenameWithoutExtension(filePath);
+      final directory = path.dirname(filePath);
+      final jsonFile =
+          File(path.join(directory, '$fileNameWithoutExtension.json'));
+
+      if (jsonFile.existsSync()) {
+        jsonFile.deleteSync();
+        logger.i("Removed JSON file: ${jsonFile.path}");
+      }
+    } catch (e) {
+      logger.e("Error removing JSON file: $e");
     }
   }
 
   void removeThumbsDb(Directory directory) {
-    final thumbsDbFile = File(path.join(directory.path, 'Thumbs.db'));
-    if (thumbsDbFile.existsSync()) {
-      thumbsDbFile.deleteSync();
-      logger.i("Thumbs.db file removed from ${directory.path}");
+    try {
+      final thumbsDbFile = File(path.join(directory.path, 'Thumbs.db'));
+      if (thumbsDbFile.existsSync()) {
+        thumbsDbFile.deleteSync();
+        logger.i("Thumbs.db file removed from ${directory.path}");
+      }
+    } catch (e) {
+      logger.e("Error removing Thumbs.db: $e");
     }
   }
 
   void ensureFileInDirectory(String filePath, Directory destinationDir) {
-    final file = File(filePath);
-    final destinationFile =
-        File(path.join(destinationDir.path, path.basename(file.path)));
-    print("destinationFile: ${destinationFile.existsSync()}");
-    if (!destinationFile.existsSync()) {
-      if (file.existsSync()) {
-        file.copySync(destinationFile.path);
-        logger.i("Copied ${file.path} to ${destinationFile.path}");
-        // Remove Thumbs.db if it exists
-        removeThumbsDb(destinationDir);
+    if (filePath.isEmpty) return;
+
+    try {
+      final file = File(filePath);
+      final destinationFile =
+          File(path.join(destinationDir.path, path.basename(file.path)));
+
+      if (!destinationFile.existsSync()) {
+        if (file.existsSync()) {
+          file.copySync(destinationFile.path);
+          logger.i("Copied ${file.path} to ${destinationFile.path}");
+          removeThumbsDb(destinationDir);
+        } else {
+          logger.w("Source file ${file.path} does not exist.");
+        }
       } else {
-        logger.w("Source file ${file.path} does not exist.");
+        logger.i(
+            "File ${destinationFile.path} already exists in the destination.");
       }
-    } else {
-      logger
-          .i("File ${destinationFile.path} already exists in the destination.");
+    } catch (e) {
+      logger.e("Error ensuring file in directory: $e");
     }
   }
 
   bool checkForFicheZoller(Directory destinationDir) {
-    final ficheZollerDir =
-        Directory(path.join(destinationDir.path, 'Fiche Zoller'));
-    return ficheZollerDir.existsSync();
+    try {
+      final ficheZollerDir =
+          Directory(path.join(destinationDir.path, 'Fiche Zoller'));
+      return ficheZollerDir.existsSync();
+    } catch (e) {
+      logger.e("Error checking for Fiche Zoller: $e");
+      return false;
+    }
   }
 
-  // Save all controller data to a JSON file
   void saveProjectDataToJson(String filePath) {
     try {
-      // Create a map with all controller data
       final projectData = {
         'pieceRef': pieceRef.text,
         'pieceIndice': pieceIndice.text,
@@ -639,7 +739,6 @@ class CreateProjectController extends GetxController {
         'createdDate': DateTime.now().toIso8601String(),
       };
 
-      // Convert to JSON and save to file
       final jsonString = jsonEncode(projectData);
       final file = File(filePath);
       file.writeAsStringSync(jsonString);
