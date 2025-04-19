@@ -1,6 +1,9 @@
 import 'package:code_g/app/core/services/files_services.dart';
 import 'package:code_g/app/core/services/json_services.dart';
 import 'package:code_g/app/core/services/shared_service.dart';
+import 'package:code_g/app/core/services/project_service.dart';
+import 'package:code_g/app/core/services/form_validation_service.dart';
+import 'package:code_g/app/core/services/file_selection_service.dart';
 import 'package:code_g/app/modules/home/controllers/home_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -12,8 +15,10 @@ import 'dart:convert';
 class CreateProjectController extends GetxController {
   final Logger logger = Logger();
   final SharedService sharedService = SharedService();
+  final ProjectService projectService = ProjectService();
+  final FormValidationService formValidationService = FormValidationService();
+  final FileSelectionService fileSelectionService = FileSelectionService();
   final JsonServices jsonServices = JsonServices();
-  final FilesServices filesServices = FilesServices();
 
   final pieceRef = TextEditingController();
   final pieceIndice = TextEditingController();
@@ -80,28 +85,25 @@ class CreateProjectController extends GetxController {
       'File Z Path': fileZPath,
       'Plan File Path': planFilePath,
     };
-    return checkFilledFields(fields);
+    return formValidationService.checkFilledFields(fields);
   }
 
   Map<String, String> sideBarInfo() {
-    final fields = {
-      'Pièce ref º': pieceRef.text,
-      'Indice ref º': pieceIndice.text,
-      'Machine': machine.text,
-      'Matière': materiel.text,
-      'Ø Brute': pieceDiametre.text,
-      'Type Mâchoire éjection': pieceEjection.text,
-      'Tirage': selectedItemsController.text.contains("Tirage").toString(),
-      'Cimblot': selectedItemsController.text.contains("Cimblot").toString(),
-      'Manchon': selectedItemsController.text.contains("Manchon").toString(),
-      'Epaisseur Pièce': epaisseur.text,
-      'Programmeur': programmeur.text,
-      'Régleur Machine': regieur.text,
-      'Piece Name': pieceName.text,
-      'Organe BP': organeBP.text,
-      'Organe CB': organeCB.text,
-    };
-    return fields;
+    return formValidationService.getSideBarInfo(
+      pieceRef: pieceRef.text,
+      pieceIndice: pieceIndice.text,
+      machine: machine.text,
+      materiel: materiel.text,
+      pieceDiametre: pieceDiametre.text,
+      pieceEjection: pieceEjection.text,
+      selectedItems: selectedItemsController.text,
+      epaisseur: epaisseur.text,
+      programmeur: programmeur.text,
+      regieur: regieur.text,
+      pieceName: pieceName.text,
+      organeBP: organeBP.text,
+      organeCB: organeCB.text,
+    );
   }
 
   bool areSecandPartFieldsFilled() {
@@ -111,7 +113,7 @@ class CreateProjectController extends GetxController {
       'Display Operation': displayOperation,
       'Arrosage Type': arrosageType,
     };
-    return checkFilledFields(fields);
+    return formValidationService.checkFilledFields(fields);
   }
 
   @override
@@ -164,9 +166,9 @@ class CreateProjectController extends GetxController {
         return _jsonCache[cacheKey];
       }
 
-      final Map<String, dynamic> fetchedJsonData =
-          await jsonServices.loadIndiceJson();
-      var newData = [...fetchedJsonData["contenu"]];
+      final List<dynamic> fetchedJsonData =
+          await projectService.extractIndicesJsonData();
+      var newData = fetchedJsonData;
       _jsonCache[cacheKey] = newData;
 
       return newData;
@@ -183,9 +185,9 @@ class CreateProjectController extends GetxController {
         return _jsonCache[cacheKey];
       }
 
-      final Map<String, dynamic> fetchedJsonData =
-          await jsonServices.loadMachineJson();
-      var newData = [...fetchedJsonData["contenu"][0]["machines"]];
+      final List<dynamic> fetchedJsonData =
+          await projectService.extractMachineJsonData();
+      var newData = fetchedJsonData;
 
       newData.sort((a, b) {
         final String nameA = a['nom']?.toString().toLowerCase() ?? '';
@@ -208,9 +210,9 @@ class CreateProjectController extends GetxController {
         return _jsonCache[cacheKey];
       }
 
-      final Map<String, dynamic> fetchedJsonData = await jsonServices
-          .loadJsonFromAssets('assets/json/machoireEJECTION.json');
-      var newData = [...fetchedJsonData["contenu"][0]["types"]];
+      final List<dynamic> fetchedJsonData = await projectService
+          .extractMechoireJsonData();
+      var newData = fetchedJsonData;
 
       newData.sort((a, b) {
         final String nameA = a.toString().toLowerCase();
@@ -233,9 +235,9 @@ class CreateProjectController extends GetxController {
         return _jsonCache[cacheKey];
       }
 
-      final Map<String, dynamic> fetchedJsonData =
-          await jsonServices.loadProgrammerJson();
-      var newData = [...fetchedJsonData["contenu"]];
+      final List<dynamic> fetchedJsonData =
+          await projectService.extractProgrammersJsonData();
+      var newData = fetchedJsonData;
 
       newData.sort((a, b) {
         final String nameA = a['nom']?.toString().toLowerCase() ?? '';
@@ -258,9 +260,9 @@ class CreateProjectController extends GetxController {
         return _jsonCache[cacheKey];
       }
 
-      final Map<String, dynamic> fetchedJsonData =
-          await jsonServices.loadArrosageJson();
-      var newData = [...fetchedJsonData["contenu"]];
+      final List<dynamic> fetchedJsonData =
+          await projectService.extractArrosageTypesJsonData();
+      var newData = fetchedJsonData;
 
       newData.sort((a, b) {
         final String nameA = a['name']?.toString().toLowerCase() ?? '';
@@ -283,9 +285,9 @@ class CreateProjectController extends GetxController {
         return _jsonCache[cacheKey];
       }
 
-      final Map<String, dynamic> fetchedJsonData =
-          await jsonServices.loadTopSolideJson();
-      var newData = [...fetchedJsonData["contenu"]];
+      final List<dynamic> fetchedJsonData =
+          await projectService.extractTopSolideOperationsJsonData();
+      var newData = fetchedJsonData;
 
       newData.sort((a, b) {
         final String nameA = a['name']?.toString().toLowerCase() ?? '';
@@ -347,175 +349,69 @@ class CreateProjectController extends GetxController {
     return "pending";
   }
 
-  void selectFile(Map<String, List<String>> selectedFile,
-      TextEditingController controller) {
-    if (selectedFile == null) return;
-
-    try {
-      if (selectedFile.containsKey("file")) {
-        String filePath = selectedFile["file"]!.first;
-        controller.text = filePath;
-      } else if (selectedFile.containsKey("files") &&
-          selectedFile["files"]!.isNotEmpty) {
-        controller.text = selectedFile["files"]!.first;
-      }
-      update();
-    } catch (e) {
-      logger.e("Error selecting file: $e");
-    }
+  void selectFile(Map<String, List<String>>? selectedFile, TextEditingController controller) {
+    fileSelectionService.selectFile(selectedFile, controller);
+    update();
   }
 
-  void selectFao(Map<String, List<String>> selectedFile) {
-    if (selectedFile == null ||
-        !selectedFile.containsKey("file") ||
-        selectedFile["file"]!.isEmpty) {
-      return;
-    }
-
-    try {
-      String filePath = selectedFile["file"]!.first;
-      String fileName = path.basename(filePath);
-
-      if ((fileName.toLowerCase().endsWith('.arc')) &&
-          !fileName.toLowerCase().contains('pince')) {
-        selectFile(selectedFile, faoFilePath);
-        faoStatus.value = _borderColor(faoFilePath);
-        update();
-      } else {
-        logger.w(
-            "Invalid file: File must end with '.arc' and not contain 'pince'.");
-      }
-    } catch (e) {
-      logger.e("Error selecting FAO file: $e");
-    }
+  void selectFao(Map<String, List<String>>? selectedFile) {
+    fileSelectionService.selectFao(
+      selectedFile, 
+      faoFilePath, 
+      (status) => faoStatus.value = status
+    );
+    update();
   }
 
-  void selectPlan(Map<String, List<String>> selectedFile) {
-    if (selectedFile == null ||
-        !selectedFile.containsKey("file") ||
-        selectedFile["file"]!.isEmpty) {
-      return;
-    }
-
-    try {
-      String filePath = selectedFile["file"]!.first;
-      String fileName = path.basename(filePath);
-
-      if (fileName.toLowerCase().contains("ind") &&
-          fileName.toLowerCase().endsWith('.pdf')) {
-        selectFile(selectedFile, planFilePath);
-        planStatus.value = _borderColor(planFilePath);
-        update();
-      } else {
-        logger.w("Invalid file: File must be PDF and contain 'IND'.");
-      }
-    } catch (e) {
-      logger.e("Error selecting plan file: $e");
-    }
+  void selectPlan(Map<String, List<String>>? selectedFile) {
+    fileSelectionService.selectPlan(
+      selectedFile, 
+      planFilePath, 
+      (status) => planStatus.value = status
+    );
+    update();
   }
 
-  void selectFileZ(Map<String, List<String>> selectedFile) async {
-    if (selectedFile == null ||
-        !selectedFile.containsKey("file") ||
-        selectedFile["file"]!.isEmpty) {
-      return;
+  void selectFileZ(Map<String, List<String>>? selectedFile) async {
+    Map<String, dynamic> result = await fileSelectionService.selectFileZ(
+      selectedFile, 
+      fileZPath, 
+      (status) => fileZStatus.value = status
+    );
+    
+    if (result.isNotEmpty) {
+      processFileZResult(result);
     }
+    
+    update();
+  }
 
-    try {
-      String filePath = selectedFile["file"]!.first;
-      String fileName = path.basename(filePath);
-      bool isFileZ = fileName.toLowerCase().contains('fiche z');
-      bool isPdf = fileName.toLowerCase().endsWith('.pdf');
-
-      if (isFileZ && isPdf) {
-        fileZPath.text = filePath;
-        fileZStatus.value = _borderColor(fileZPath);
-        update();
-        await downloadFileZ(filePath);
-      } else {
-        logger.w("Invalid file: File must be PDF and contain 'fiche z'.");
-      }
-    } catch (e) {
-      logger.e("Error selecting file Z: $e");
+  void processFileZResult(Map<String, dynamic> structuredJson) {
+    if (structuredJson.containsKey("entries")) {
+      fileZJsonData.value = List<dynamic>.from(structuredJson["entries"]);
     }
+    
+    if (structuredJson.containsKey("fileName")) {
+      machine.text = structuredJson["fileName"].contains("R200") ? "R200" : "G160";
+    }
+    
+    update();
   }
 
   void selectFilesFromFolder(Map<String, List<String>>? selectedFolderFiles) {
-    if (selectedFolderFiles == null) return;
-
-    try {
-      if (selectedFolderFiles.containsKey("mainDir") &&
-          selectedFolderFiles['mainDir']!.isNotEmpty) {
-        var mainDir = selectedFolderFiles['mainDir']![0];
-        if (FileSystemEntity.isDirectorySync(mainDir)) {
-          caoFilePath.text = mainDir;
-          caoStatus.value = _borderColor(caoFilePath);
-          update();
-        }
-      }
-
-      if (selectedFolderFiles.containsKey("arc")) {
-        List<String> arcFiles =
-            List<String>.from(selectedFolderFiles['arc'] ?? []);
-        for (var file in arcFiles) {
-          selectFao({
-            "file": [file]
-          });
-        }
-      }
-
-      if (selectedFolderFiles.containsKey("pdf")) {
-        List<String> pdfFiles =
-            List<String>.from(selectedFolderFiles['pdf'] ?? []);
-        for (var file in pdfFiles) {
-          selectFileZ({
-            "file": [file]
-          });
-          selectPlan({
-            "file": [file]
-          });
-        }
-      }
-
-      if (selectedFolderFiles.containsKey("dir")) {
-        List<String> directories =
-            List<String>.from(selectedFolderFiles['dir'] ?? []);
-        for (var dir in directories) {
-          if (FileSystemEntity.isDirectorySync(dir)) {
-            var listGroup = filesServices.regroupDirectoryFilesByType(dir);
-            selectFilesFromFolder(listGroup);
-          }
-        }
-      }
-    } catch (e) {
-      logger.e("Error selecting files from folder: $e");
-    }
-  }
-
-  Future<void> downloadFileZ(String filePath) async {
-    try {
-      String fileName = path.basename(filePath);
-      String directory = path.dirname(filePath);
-
-      Map<String, dynamic> structuredJson =
-          await filesServices.convertFileZHtmlToJson(filePath);
-
-      if (structuredJson.containsKey("entries")) {
-        fileZJsonData.value = List<dynamic>.from(structuredJson["entries"]);
-      }
-
-      if (structuredJson.containsKey("fileName")) {
-        machine.text =
-            structuredJson["fileName"].contains("R200") ? "R200" : "G160";
-      }
-
-      update();
-
-      await filesServices.saveContentToFile(
-          structuredJson, directory, fileName.split(".")[0], "json");
-    } catch (e) {
-      logger.e("Error downloading file Z: $e");
-    }
+    fileSelectionService.selectFilesFromFolder(
+      selectedFolderFiles,
+      caoFilePath,
+      faoFilePath,
+      fileZPath,
+      planFilePath,
+      (status) => caoStatus.value = status,
+      (status) => faoStatus.value = status,
+      (status) => fileZStatus.value = status,
+      (status) => planStatus.value = status,
+      processFileZResult
+    );
+    update();
   }
 
   void copySelectedFolder() {
@@ -523,45 +419,52 @@ class CreateProjectController extends GetxController {
       logger.w("No CAO file path selected");
       return;
     }
-
+    
     try {
-      String userProfile = Platform.environment['USERPROFILE'] ??
-          '\\home\\${Platform.environment['USER']}';
-      String defaultDesktopPath = "$userProfile\\Desktop\\aerobase";
-      String subPath = "${pieceRef.text}\\${pieceIndice.text}\\copied_folder";
-      final sourceDir = Directory(caoFilePath.text);
-      final destinationDir = Directory(path.join(defaultDesktopPath, subPath));
-
-      if (!sourceDir.existsSync()) {
-        logger.e("Source directory does not exist.");
-        return;
-      }
-
-      destinationDir.createSync(recursive: true);
-      filesServices.copyDirectory(sourceDir, destinationDir);
-      logger.i("Files copied successfully.");
-
-      final ficheZollerDir =
-          Directory(path.join(destinationDir.path, 'Fiche Zoller'));
-      if (!ficheZollerDir.existsSync()) {
-        ficheZollerDir.createSync(recursive: true);
-        logger.i("Fiche Zoller folder created.");
-      }
-
-      ensureFileInDirectory(fileZPath.text, ficheZollerDir);
-      ensureFileInDirectory(form.text, ficheZollerDir);
-
-      removeThumbsDb(destinationDir);
-      removeJsonFileWithSameName(fileZPath.text);
-
-      if (!containsArcFiles(destinationDir)) {
-        ensureFileInDirectory(faoFilePath.text, destinationDir);
-      }
-
-      saveProjectDataToJson(
-          path.join(destinationDir.parent.path, 'project.json'));
-
-      resetAllControllers();
+      Map<String, dynamic> projectData = formValidationService.prepareProjectData(
+        pieceRef: pieceRef.text,
+        pieceIndice: pieceIndice.text,
+        machine: machine.text,
+        pieceDiametre: pieceDiametre.text,
+        pieceEjection: pieceEjection.text,
+        pieceName: pieceName.text,
+        epaisseur: epaisseur.text,
+        materiel: materiel.text,
+        form: form.text,
+        programmeur: programmeur.text,
+        regieur: regieur.text,
+        specification: specification.text,
+        organeBP: organeBP.text,
+        organeCB: organeCB.text,
+        selectedItems: selectedItemsController.text,
+        caoFilePath: caoFilePath.text,
+        faoFilePath: faoFilePath.text,
+        fileZPath: fileZPath.text,
+        planFilePath: planFilePath.text,
+        topSolideOperation: topSolideOperation.text,
+        operationName: operationName.text,
+        displayOperation: displayOperation.text,
+        arrosageType: arrosageType.text,
+        fileZStatus: fileZStatus.value,
+        caoStatus: caoStatus.value,
+        faoStatus: faoStatus.value,
+        planStatus: planStatus.value,
+      );
+      
+      projectService.copyProjectFolder(
+        sourceFolder: caoFilePath.text,
+        pieceRef: pieceRef.text,
+        pieceIndice: pieceIndice.text,
+        fileZPath: fileZPath.text,
+        formPath: form.text,
+        faoFilePath: faoFilePath.text,
+        projectData: projectData,
+      ).then((success) {
+        if (success) {
+          resetAllControllers();
+        }
+      });
+      
     } catch (e) {
       logger.e("Error copying folder: $e");
     }
