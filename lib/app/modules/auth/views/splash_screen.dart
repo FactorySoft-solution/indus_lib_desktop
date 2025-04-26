@@ -51,9 +51,12 @@ class _SplashScreenState extends State<SplashScreen> {
           barrierColor:
               const Color.fromARGB(148, 0, 0, 0), // Soft transparent background
           builder: (context) {
-            final contextWidth = MediaQuery.of(context)
-                .size
-                .width; // Set width to 80% of the screen width
+            final size = MediaQuery.of(context).size;
+            final isSmallScreen = size.width < 600;
+            final dialogWidth =
+                isSmallScreen ? size.width * 0.95 : size.width * 0.8;
+            final dialogPadding = isSmallScreen ? 20.0 : 70.0;
+
             return Dialog(
               shape: RoundedRectangleBorder(
                 borderRadius:
@@ -63,12 +66,14 @@ class _SplashScreenState extends State<SplashScreen> {
                 clipBehavior: Clip.none, // Allow overflow from the Dialog
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(70),
+                    padding: EdgeInsets.all(dialogPadding),
                     constraints: BoxConstraints(
-                        maxWidth:
-                            contextWidth * 0.8), // Set max width of dialog
-                    child: const SingleChildScrollView(
-                      padding: EdgeInsets.all(16),
+                        maxWidth: dialogWidth,
+                        maxHeight: isSmallScreen
+                            ? size.height * 0.8
+                            : size.height * 0.7), // Set max width of dialog
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.all(isSmallScreen ? 8 : 16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -76,17 +81,18 @@ class _SplashScreenState extends State<SplashScreen> {
                             alignment: Alignment.center,
                             child: Text(
                               "Optimisez vos processus de fabrication avec AeroBase STTR",
+                              textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: AppColors.darkColor,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 18,
+                                fontSize: isSmallScreen ? 16 : 18,
                               ),
                             ),
                           ),
-                          SizedBox(height: 30),
-                          const Text(
-                            "AeroBase STTR est une solution logicielle complète et personnalisée, conçue spécifiquement pour répondre aux besoins de tous les départements de STTR, y compris le bureau des méthodes, ainsi que pour les entreprises du groupe Rebert. Développée comme une application de bureau avec JavaScript et le Framework Flutter par une équipe de quatre personnes, AeroBase STTR centralise et simplifie la gestion des programmes machines liés à la fabrication des pièces. Cette application permet une gestion fluide des programmes, avec des outils de recherche avancés facilitant l'accès à l’historique des programmes, des versions et des modifications. En outre, elle intègre des fonctionnalités essentielles telles que la gestion des fiches outils Zoller et une interconnexion transparente avec les systèmes CAO (Conception Assistée par Ordinateur) et FAO (Fabrication Assistée par Ordinateur). Cette synergie entre la conception et la fabrication assure une meilleure coordination des processus. AeroBase STTR ne se limite pas à la gestion des programmes ; elle est également conçue pour résoudre les problèmes récurrents rencontrés dans l'entreprise, en optimisant les méthodes de travail dans tous les services. L'application facilite la collaboration et améliore la productivité globale, contribuant ainsi au maintien de la conformité avec les normes ISO, indispensables pour préserver la compétitivité de l’entreprise dans son secteur. En termes de sécurité, AeroBase STTR garantit une protection maximale des données sensibles, grâce à une base de données sécurisée et des protocoles stricts de confidentialité. Cette approche assure que les données clients sont traitées de manière confidentielle, en conformité avec les normes internationales de sécurité des informations. Conçue pour évoluer avec les besoins futurs de l’entreprise, AeroBase STTR est un outil flexible et scalable, offrant la possibilité d'ajouter de nouvelles fonctionnalités afin de répondre aux défis émergents et aux besoins croissants de l’industrie.",
-                            style: TextStyle(fontSize: 14),
+                          SizedBox(height: isSmallScreen ? 20 : 30),
+                          Text(
+                            "AeroBase STTR est une solution logicielle complète et personnalisée, conçue spécifiquement pour répondre aux besoins de tous les départements de STTR, y compris le bureau des méthodes, ainsi que pour les entreprises du groupe Rebert. Développée comme une application de bureau avec JavaScript et le Framework Flutter par une équipe de quatre personnes, AeroBase STTR centralise et simplifie la gestion des programmes machines liés à la fabrication des pièces. Cette application permet une gestion fluide des programmes, avec des outils de recherche avancés facilitant l'accès à l'historique des programmes, des versions et des modifications. En outre, elle intègre des fonctionnalités essentielles telles que la gestion des fiches outils Zoller et une interconnexion transparente avec les systèmes CAO (Conception Assistée par Ordinateur) et FAO (Fabrication Assistée par Ordinateur). Cette synergie entre la conception et la fabrication assure une meilleure coordination des processus. AeroBase STTR ne se limite pas à la gestion des programmes ; elle est également conçue pour résoudre les problèmes récurrents rencontrés dans l'entreprise, en optimisant les méthodes de travail dans tous les services. L'application facilite la collaboration et améliore la productivité globale, contribuant ainsi au maintien de la conformité avec les normes ISO, indispensables pour préserver la compétitivité de l'entreprise dans son secteur. En termes de sécurité, AeroBase STTR garantit une protection maximale des données sensibles, grâce à une base de données sécurisée et des protocoles stricts de confidentialité. Cette approche assure que les données clients sont traitées de manière confidentielle, en conformité avec les normes internationales de sécurité des informations. Conçue pour évoluer avec les besoins futurs de l'entreprise, AeroBase STTR est un outil flexible et scalable, offrant la possibilité d'ajouter de nouvelles fonctionnalités afin de répondre aux défis émergents et aux besoins croissants de l'industrie.",
+                            style: TextStyle(fontSize: isSmallScreen ? 12 : 14),
                           ),
                           SizedBox(height: 16),
                         ],
@@ -113,6 +119,10 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isSmallScreen = size.width < 600;
+    final logoSize = isSmallScreen ? 150.0 : 200.0;
+
     return Scaffold(
       backgroundColor: AppColors.ligthColor,
       body: Center(
@@ -121,8 +131,8 @@ class _SplashScreenState extends State<SplashScreen> {
           duration: Duration(seconds: 2), // Duration of the fade-in effect
           child: Image.asset(
             'assets/logo.png', // Replace with your image path
-            height: 200,
-            width: 200,
+            height: logoSize,
+            width: logoSize,
           ),
         ),
       ),

@@ -13,10 +13,12 @@ void main() async {
   await dotenv.load(fileName: ".env.developement");
   AppConfig config = await AppConfig.loadConfig(
       'dev'); // Change 'dev' to 'staging' or 'prod' as needed
-  DesktopWindow.setWindowSize(const Size(1700, 1000));
+
+  // Set initial window size but allow resizing
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-    setWindowMinSize(const Size(1700, 1000));
-    setWindowMaxSize(const Size(1700, 1000));
+    setWindowMinSize(const Size(900, 650)); // Smaller minimum size
+    // Let's set a good default size but allow resizing
+    setWindowFrame(const Rect.fromLTWH(0, 0, 1400, 900));
   }
 
   runApp(MyApp(config: config));
@@ -34,6 +36,10 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: config.debugMode, // Enable/Disable debug mode
       initialRoute: AppPages.initial,
       getPages: AppPages.routes,
+      theme: ThemeData(
+        useMaterial3: true,
+        // Add responsive padding/spacing here if needed
+      ),
     );
   }
 }

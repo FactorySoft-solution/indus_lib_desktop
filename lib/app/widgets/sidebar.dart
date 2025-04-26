@@ -8,7 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class SidebarWidget extends StatelessWidget {
-  SidebarWidget({Key? key}) : super(key: key);
+  final bool isDrawer;
+
+  SidebarWidget({Key? key, this.isDrawer = false}) : super(key: key);
 
   final HomeController controller = Get.put(HomeController());
   final CreateProjectController createProjectController =
@@ -18,39 +20,49 @@ class SidebarWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final contextHeight = MediaQuery.of(context).size.height;
 
+    final sidebarContent = SingleChildScrollView(
+        child: Obx(
+      () => Column(
+        children: [
+          const SidebarHeader(),
+          const SidebarDivider(),
+          if (controller.activePage.value ==
+              "Ajouter une mouvelle pièce/resume-project") ...[
+            const SizedBox(height: 20),
+            CreateProjectResumeSidebarContent(
+                createProjectController: createProjectController),
+            const SizedBox(height: 20),
+          ] else ...[
+            SidebarTopMenu(controller: controller),
+            const SizedBox(height: 50),
+          ],
+          const SidebarFooter(),
+          const SizedBox(height: 50),
+          SidebarBottomMenu(controller: controller),
+        ],
+      ),
+    ));
+
+    // If used as a drawer in mobile layout
+    if (isDrawer) {
+      return Drawer(
+        child: sidebarContent,
+      );
+    }
+
+    // Default desktop sidebar
     return Container(
-        height: contextHeight,
-        width: 280,
-        decoration: const BoxDecoration(
-          color: AppColors.purpleColor,
-          borderRadius: BorderRadius.only(
-            topRight: Radius.circular(18),
-            bottomRight: Radius.circular(18),
-          ),
+      height: contextHeight,
+      width: 280,
+      decoration: const BoxDecoration(
+        color: AppColors.purpleColor,
+        borderRadius: BorderRadius.only(
+          topRight: Radius.circular(18),
+          bottomRight: Radius.circular(18),
         ),
-        child: SingleChildScrollView(
-          child: Obx(
-            () => Column(
-              children: [
-                const SidebarHeader(),
-                const SidebarDivider(),
-                if (controller.activePage.value ==
-                    "Ajouter une mouvelle pièce/resume-project") ...[
-                  const SizedBox(height: 20),
-                  CreateProjectResumeSidebarContent(
-                      createProjectController: createProjectController),
-                  const SizedBox(height: 20),
-                ] else ...[
-                  SidebarTopMenu(controller: controller),
-                  const SizedBox(height: 50),
-                ],
-                const SidebarFooter(),
-                const SizedBox(height: 50),
-                SidebarBottomMenu(controller: controller),
-              ],
-            ),
-          ),
-        ));
+      ),
+      child: sidebarContent,
+    );
   }
 }
 

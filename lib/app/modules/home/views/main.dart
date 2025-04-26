@@ -15,57 +15,84 @@ import '../controllers/home_controller.dart';
 
 class MainView extends GetView<HomeController> {
   MainView({super.key});
-  final logger = new Logger();
+  final logger = Logger();
+
   @override
   Widget build(BuildContext context) {
-    final pageWidth = MediaQuery.of(context).size.width;
-    final pageHeight = MediaQuery.of(context).size.height;
+    final size = MediaQuery.of(context).size;
+    final isSmallScreen = size.width < 900;
+
     return Scaffold(
       backgroundColor: AppColors.ligthColor,
-      body: Center(
-        child: SingleChildScrollView(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              SidebarWidget(),
-              SizedBox(
-                width: pageWidth * 0.79,
-                height: pageHeight,
-                // decoration: BoxDecoration(color: Colors.black45),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Obx(
-                    () {
-                      // logger.i(controller.activePage.value);
-                      switch (controller.activePage.value) {
-                        case 'Ajouter une mouvelle pièce':
-                          return CreateProjectView();
-                        case 'Ajouter une mouvelle pièce/resume-project':
-                          return ResumeProjectView();
-                        case 'Recherche avancée':
-                          return SearchView();
-                        case 'Calculateur Méthode Robert':
-                          // Initialize controller before returning view
-                          if (!Get.isRegistered<RobertMethodController>()) {
-                            Get.put(RobertMethodController());
-                          }
-                          return const RobertMethodView();
-                        case 'Calculateur Filtage':
-                          if (!Get.isRegistered<RobertMethodController>()) {
-                            Get.put(RobertMethodController());
-                          }
-                          return const FiltageCalculatorView();
-                        default:
-                          return PdfToHtmlConverter();
-                      }
-                    },
-                  ),
-                ),
-              ),
-            ],
+      drawer: isSmallScreen ? SidebarWidget(isDrawer: true) : null,
+      body: isSmallScreen
+          ? _buildMobileLayout(context)
+          : _buildDesktopLayout(context),
+    );
+  }
+
+  Widget _buildDesktopLayout(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
+    return Center(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SidebarWidget(),
+          SizedBox(
+            width: size.width * 0.79,
+            height: size.height,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: _buildActivePageContent(),
+            ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
+    return Center(
+      child: SizedBox(
+        width: size.width,
+        height: size.height,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: _buildActivePageContent(),
         ),
       ),
+    );
+  }
+
+  Widget _buildActivePageContent() {
+    return Obx(
+      () {
+        switch (controller.activePage.value) {
+          case 'Ajouter une mouvelle pièce':
+            return CreateProjectView();
+          case 'Ajouter une mouvelle pièce/resume-project':
+            return ResumeProjectView();
+          case 'Recherche avancée':
+            return SearchView();
+          case 'Calculateur Méthode Robert':
+            // Initialize controller before returning view
+            if (!Get.isRegistered<RobertMethodController>()) {
+              Get.put(RobertMethodController());
+            }
+            return const RobertMethodView();
+          case 'Calculateur Filtage':
+            if (!Get.isRegistered<RobertMethodController>()) {
+              Get.put(RobertMethodController());
+            }
+            return const FiltageCalculatorView();
+          default:
+            return PdfToHtmlConverter();
+        }
+      },
     );
   }
 }

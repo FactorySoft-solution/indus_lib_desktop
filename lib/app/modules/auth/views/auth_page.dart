@@ -32,48 +32,50 @@ class _AuthPageState extends State<AuthPage> {
         body: Padding(
           padding: const EdgeInsets.all(28.0),
           child: SingleChildScrollView(
-              child: Flex(
-            direction: Axis.horizontal,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Column(
-                children: [
-                  Image.asset(
-                    "assets/logo.png",
-                    height: 100,
-                    width: 100,
-                  ),
-                  const SizedBox(
-                    height: 50,
-                  ),
-                  const authCard(),
-                ],
-              ),
-            ],
+              child: Center(
+            child: Column(
+              children: [
+                Image.asset(
+                  "assets/logo.png",
+                  height: 100,
+                  width: 100,
+                ),
+                const SizedBox(
+                  height: 50,
+                ),
+                const AuthCard(),
+              ],
+            ),
           )),
         ));
   }
 }
 
-class authCard extends StatefulWidget {
-  const authCard({super.key});
+class AuthCard extends StatefulWidget {
+  const AuthCard({super.key});
 
   @override
-  State<authCard> createState() => _authCardState();
+  State<AuthCard> createState() => _AuthCardState();
 }
 
-class _authCardState extends State<authCard> {
+class _AuthCardState extends State<AuthCard> {
   @override
   Widget build(BuildContext context) {
-    toUserLogin() {
+    final size = MediaQuery.of(context).size;
+    final isSmallScreen = size.width < 800;
+
+    void toUserLogin() {
       Get.toNamed(Routes.LOGIN, arguments: {"role": "user"});
     }
 
-    toAdminLogin() {
+    void toAdminLogin() {
       Get.toNamed(Routes.LOGIN, arguments: {"role": "admin"});
     }
 
     return Container(
+      constraints: BoxConstraints(
+        maxWidth: 1000, // Max width for large screens
+      ),
       decoration: const BoxDecoration(
         color: AppColors.ligthColor,
         borderRadius: BorderRadius.all(
@@ -88,11 +90,9 @@ class _authCardState extends State<authCard> {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.only(
-          left: 70,
-          right: 70,
-          top: 100,
-          bottom: 100,
+        padding: EdgeInsets.symmetric(
+          horizontal: isSmallScreen ? 30 : 70,
+          vertical: isSmallScreen ? 50 : 100,
         ),
         child: Column(
           children: [
@@ -107,67 +107,99 @@ class _authCardState extends State<authCard> {
             const SizedBox(
               height: 45,
             ),
-            Flex(
-              direction: Axis.horizontal,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Flex(
-                  direction: Axis.vertical,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    SvgPicture.asset(
-                      "assets/auth/user.svg",
-                      semanticsLabel: 'user image',
-                      height: 150,
-                    ),
-                    const SizedBox(
-                      height: 15,
-                    ),
-                    CustomButton(
-                      color: AppColors.purpleColor,
-                      text: "Se connecter en tant qu'utilisateur",
-                      onPressed: () => toUserLogin(),
-                    )
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                  child: Container(
-                    width: 1,
-                    height: 200,
-                    decoration: const BoxDecoration(
-                      color: AppColors.darkColor,
-                    ),
-                    // ),
-                  ),
-                ),
-                Flex(
-                  direction: Axis.vertical,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    SvgPicture.asset(
-                      "assets/auth/admin.svg",
-                      semanticsLabel: 'admin image',
-                      height: 150,
-                    ),
-                    const SizedBox(
-                      height: 15,
-                    ),
-                    CustomButton(
-                      text: "Se connecter en tant qu'administrateur",
-                      onPressed: () => toAdminLogin(),
-                      color: AppColors.orangeColor,
-                    ),
-                  ],
-                ),
-              ],
-            )
+            isSmallScreen
+                ? _buildVerticalLayout(toUserLogin, toAdminLogin)
+                : _buildHorizontalLayout(toUserLogin, toAdminLogin),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildHorizontalLayout(
+      VoidCallback toUserLogin, VoidCallback toAdminLogin) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: _buildUserSection(toUserLogin),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: Container(
+            width: 1,
+            height: 200,
+            decoration: const BoxDecoration(
+              color: AppColors.darkColor,
+            ),
+          ),
+        ),
+        Expanded(
+          child: _buildAdminSection(toAdminLogin),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVerticalLayout(
+      VoidCallback toUserLogin, VoidCallback toAdminLogin) {
+    return Column(
+      children: [
+        _buildUserSection(toUserLogin),
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 20.0),
+          child: Divider(
+            color: AppColors.darkColor,
+            thickness: 1,
+          ),
+        ),
+        _buildAdminSection(toAdminLogin),
+      ],
+    );
+  }
+
+  Widget _buildUserSection(VoidCallback toUserLogin) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SvgPicture.asset(
+          "assets/auth/user.svg",
+          semanticsLabel: 'user image',
+          height: 150,
+        ),
+        const SizedBox(
+          height: 15,
+        ),
+        CustomButton(
+          color: AppColors.purpleColor,
+          text: "Se connecter en tant qu'utilisateur",
+          onPressed: toUserLogin,
+        )
+      ],
+    );
+  }
+
+  Widget _buildAdminSection(VoidCallback toAdminLogin) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SvgPicture.asset(
+          "assets/auth/admin.svg",
+          semanticsLabel: 'admin image',
+          height: 150,
+        ),
+        const SizedBox(
+          height: 15,
+        ),
+        CustomButton(
+          text: "Se connecter en tant qu'administrateur",
+          onPressed: toAdminLogin,
+          color: AppColors.orangeColor,
+        ),
+      ],
     );
   }
 }

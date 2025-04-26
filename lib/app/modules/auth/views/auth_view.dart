@@ -16,19 +16,22 @@ class AuthView extends GetView<AuthController> {
 
   @override
   Widget build(BuildContext context) {
-    final pageWidth = MediaQuery.of(context).size.width;
+    final size = MediaQuery.of(context).size;
+    final isSmallScreen = size.width < 600;
+    final logoSize = isSmallScreen ? 150.0 : 250.0;
+    final cardWidth = isSmallScreen ? size.width * 0.9 : size.width * 0.7;
+    final cardHeight = isSmallScreen ? 450.0 : 500.0;
+    final inputWidth = isSmallScreen ? cardWidth * 0.8 : 550.0;
+
     return Scaffold(
       body: SingleChildScrollView(
         child: Center(
           child: Column(
             children: [
-              const IconWidget(
-                  size: 250,
-                  // onPressed: () => Get.toNamed("/"),
-                  imagePath: "assets/logo.png"),
+              IconWidget(size: logoSize, imagePath: "assets/logo.png"),
               CustomCard(
-                width: pageWidth * 0.7,
-                height: 500,
+                width: cardWidth,
+                height: cardHeight,
                 children: [
                   Row(
                     children: [
@@ -48,7 +51,7 @@ class AuthView extends GetView<AuthController> {
                     height: 20,
                   ),
                   CustomTextInput(
-                    width: 550,
+                    width: inputWidth,
                     controller: controller.emailController,
                     label: "Nom d'utilisateur",
                     hint: "Entrez votre nom d'utilisateur",
@@ -57,7 +60,7 @@ class AuthView extends GetView<AuthController> {
                     height: 20,
                   ),
                   CustomPasswordInput(
-                    width: 550,
+                    width: inputWidth,
                     controller: controller.passwordController,
                     label: "Technical company name",
                     hint: "Entrez votre mot de passe",
@@ -68,10 +71,7 @@ class AuthView extends GetView<AuthController> {
                   CustomButton(
                     text: "Se connecter",
                     onPressed: controller.login,
-                    // onPressed: controller.login,
-                    // onPressed: () =>
-                    //     controller.getUserByUsername("ahmahmedmili76@gmail.com"),
-                    width: 550,
+                    width: inputWidth,
                     height: 50,
                     color: AppColors.purpleColor,
                   )
