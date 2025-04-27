@@ -5,6 +5,7 @@ import 'package:path/path.dart' as path;
 import 'dart:math' as Math;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'dart:convert';
 
 import 'file_view_service.dart';
 
@@ -446,7 +447,7 @@ class PinceSearchService {
                                 ),
                                 const Divider(),
                                 // Display blocks in a tabular format
-                                _buildOperationsTable(blocks),
+                                _buildOperationsTable(blocks, filePath),
                                 const SizedBox(height: 8),
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.end,
@@ -488,7 +489,8 @@ class PinceSearchService {
   }
 
   /// Build a table for the operation blocks
-  static Widget _buildOperationsTable(Map<String, List<String>> blocks) {
+  static Widget _buildOperationsTable(
+      Map<String, List<String>> blocks, String filePath) {
     print('Building operations table with ${blocks.length} blocks');
 
     // Extract operations data from blocks
@@ -570,8 +572,23 @@ class PinceSearchService {
             operation['titreOP'] = msgText;
             print('EXTRACTED TITLE FROM MSG: "${operation['titreOP']}"');
 
+            // Start background search for matching operations in project.json files
+            quickSearchOperations(msgText, filePath).then((matchingOperations) {
+              print('matchingOperations : $matchingOperations');
+              if (matchingOperations.isNotEmpty) {
+                print(
+                    'Found ${matchingOperations.length} matching operations in project.json files');
+                operation['matchingProjects'] =
+                    matchingOperations.length.toString();
+
+                // Store the results for later use
+                Get.put(matchingOperations, tag: 'matchingOps_$msgText');
+              }
+            });
+
             // Extract D value from the title
             final dMatch = RegExp(r'D\d+').firstMatch(msgText);
+            print('dMatch : $dMatch');
             if (dMatch != null) {
               operation['correcteurOP'] = dMatch.group(0)!;
               print(
@@ -733,7 +750,7 @@ class PinceSearchService {
                   DataColumn(
                       label: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Text('Consulter\nOP', textAlign: TextAlign.center),
+                    child: Text('Actions', textAlign: TextAlign.center),
                   )),
                 ],
                 rows: operations.map((op) {
@@ -748,16 +765,94 @@ class PinceSearchService {
                       DataCell(Text(op['outilOP'] ?? '')),
                       DataCell(Center(child: Text(op['bpCb'] ?? ''))),
                       DataCell(
-                        Center(
-                          child: IconButton(
-                            icon: const Icon(Icons.add_circle_outline),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            onPressed: () {
-                              _showBlockContent(
-                                  blockKey, blocks[blockKey] ?? []);
-                            },
-                          ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // View block content button
+                            IconButton(
+                              icon: const Icon(Icons.view_list),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              tooltip: 'Voir le contenu du bloc',
+                              onPressed: () {
+                                _showBlockContent(
+                                    blockKey, blocks[blockKey] ?? []);
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            // Search in projects.json button
+                            if (op['titreOP'] != null &&
+                                op['titreOP']!.isNotEmpty)
+                              IconButton(
+                                icon: const Icon(Icons.find_in_page,
+                                    color: Colors.blue),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                tooltip:
+                                    'Rechercher cette opération dans le project.json',
+                                onPressed: () {
+                                  searchOperationInProjectJson(
+                                      op['titreOP']!, null);
+                                },
+                              ),
+                            // Show matching projects badge if available
+                            if (op['matchingProjects'] != null)
+                              const SizedBox(width: 8),
+                            if (op['matchingProjects'] != null)
+                              InkWell(
+                                onTap: () {
+                                  // Retrieve the stored matching operations
+                                  final matchingOps =
+                                      Get.find<List<Map<String, dynamic>>>(
+                                    tag: 'matchingOps_${op['titreOP']}',
+                                  );
+
+                                  // Display the matching operations in a dialog
+                                  if (matchingOps.isNotEmpty) {
+                                    Get.dialog(
+                                      AlertDialog(
+                                        title: Text(
+                                            'Opérations correspondant à "${op['titreOP']}"'),
+                                        content: SizedBox(
+                                          width: 900,
+                                          height: 500,
+                                          child: SingleChildScrollView(
+                                            child:
+                                                _buildStaticProjectOperationsTable(
+                                                    matchingOps,
+                                                    op['titreOP']!),
+                                          ),
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Get.back(),
+                                            child: const Text('Fermer'),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.shade100,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                        color: Colors.green.shade600),
+                                  ),
+                                  child: Text(
+                                    '${op['matchingProjects']} projets',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.green.shade800,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     ],
@@ -1212,7 +1307,7 @@ class PinceSearchService {
               const Divider(),
               const SizedBox(height: 8),
               Expanded(
-                child: _buildOperationsTable(blocks),
+                child: _buildOperationsTable(blocks, filePath),
               ),
               const SizedBox(height: 12),
               Row(
@@ -1380,5 +1475,535 @@ class PinceSearchService {
       print('Error showing file content: $e');
       showErrorMessage('Erreur lors de l\'affichage du fichier: $e');
     }
+  }
+
+  /// Load and search operations in project.json files
+  static Future<List<Map<String, dynamic>>> findOperationsInProjectJson(
+      String titreOp, String projectPath) async {
+    try {
+      // Look for project.json file in the folder or parent folder
+      final directory = Directory(projectPath);
+      String? projectJsonPath;
+
+      // Check if the folder exists
+      if (await directory.exists()) {
+        // First check in current directory
+        var projectFile = File(path.join(directory.path, 'project.json'));
+        if (await projectFile.exists()) {
+          projectJsonPath = projectFile.path;
+        } else {
+          // Check in parent directory
+          var parentDir = directory.parent;
+          projectFile = File(path.join(parentDir.path, 'project.json'));
+          if (await projectFile.exists()) {
+            projectJsonPath = projectFile.path;
+          }
+        }
+      }
+
+      // If project.json not found, return empty list
+      if (projectJsonPath == null) {
+        print('No project.json found in $projectPath or its parent directory');
+        return [];
+      }
+
+      print('Found project.json at: $projectJsonPath');
+
+      // Read and parse the project.json file
+      final jsonContent = await File(projectJsonPath).readAsString();
+      final projectData = jsonDecode(jsonContent) as Map<String, dynamic>;
+
+      // Extract operations data
+      List<Map<String, dynamic>> results = [];
+
+      if (projectData.containsKey('operations') &&
+          projectData['operations'] is List) {
+        final operations =
+            List<Map<String, dynamic>>.from(projectData['operations']);
+
+        // Find operations matching the titre
+        for (var operation in operations) {
+          if (operation.containsKey('operation') &&
+              operation['operation']
+                  .toString()
+                  .toLowerCase()
+                  .contains(titreOp.toLowerCase())) {
+            // Add project context to the operation
+            final result = {
+              ...operation,
+              'projectInfo': {
+                'pieceRef': projectData['pieceRef'] ?? '',
+                'pieceIndice': projectData['pieceIndice'] ?? '',
+                'pieceName': projectData['pieceName'] ?? '',
+                'machine': projectData['machine'] ?? '',
+                'projectPath': projectJsonPath,
+              }
+            };
+
+            results.add(result);
+            print('Found matching operation: ${operation['operation']}');
+          }
+        }
+      }
+
+      return results;
+    } catch (e) {
+      print('Error finding operations in project.json: $e');
+      return [];
+    }
+  }
+
+  /// Open project.json file and search for matching operations
+  static void searchOperationInProjectJson(
+      String titreOp, String? projectPath) async {
+    try {
+      // Show a loading indicator
+      Get.dialog(
+        const Center(
+          child: CircularProgressIndicator(),
+        ),
+        barrierDismissible: false,
+      );
+
+      String userProfile = Platform.environment['USERPROFILE'] ??
+          '\\home\\${Platform.environment['USER']}';
+      String searchPath = projectPath ?? "$userProfile\\Desktop\\aerobase";
+
+      // Search for operations in project.json
+      final operations = await findOperationsInProjectJson(titreOp, searchPath);
+
+      // Close the loading indicator
+      Get.back();
+
+      if (operations.isEmpty) {
+        Get.snackbar(
+          'Aucune opération trouvée',
+          'Aucune opération correspondant à "$titreOp" n\'a été trouvée dans le fichier project.json',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 3),
+        );
+        return;
+      }
+
+      // Show the results in a dialog
+      Get.dialog(
+        AlertDialog(
+          title: Text('Opérations correspondant à "$titreOp"'),
+          content: SizedBox(
+            width: 900,
+            height: 500,
+            child: SingleChildScrollView(
+              child: _buildStaticProjectOperationsTable(operations, titreOp),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(),
+              child: const Text('Fermer'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      // Close the loading indicator in case of error
+      if (Get.isDialogOpen ?? false) {
+        Get.back();
+      }
+
+      print('Error searching operation in project.json: $e');
+
+      // Show error message
+      Get.snackbar(
+        'Erreur',
+        'Impossible de rechercher l\'opération dans le fichier project.json: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  /// Build a table for operations found in project.json
+  static Widget _buildStaticProjectOperationsTable(
+      List<Map<String, dynamic>> operations, String searchQuery) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: operations.isEmpty
+          ? Container(
+              width: 500,
+              height: 50,
+              alignment: Alignment.center,
+              child: Text(
+                'Aucune opération correspondant à "$searchQuery" trouvée dans le fichier project.json',
+                textAlign: TextAlign.center,
+              ),
+            )
+          : DataTable(
+              headingRowColor: MaterialStateProperty.all(Colors.green.shade100),
+              border: TableBorder.all(color: Colors.grey.shade300),
+              columnSpacing: 16,
+              columns: const [
+                DataColumn(
+                    label: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Text('Pièce Ref', textAlign: TextAlign.center),
+                )),
+                DataColumn(
+                    label: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Text('Indice', textAlign: TextAlign.center),
+                )),
+                DataColumn(
+                    label: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Text('Opération', textAlign: TextAlign.center),
+                )),
+                DataColumn(
+                    label: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Text('Display Operation', textAlign: TextAlign.center),
+                )),
+                DataColumn(
+                    label: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Text('Type TopSolide', textAlign: TextAlign.center),
+                )),
+                DataColumn(
+                    label: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Text('Arrosage', textAlign: TextAlign.center),
+                )),
+                DataColumn(
+                    label: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Text('Actions', textAlign: TextAlign.center),
+                )),
+              ],
+              rows: operations.map((op) {
+                return DataRow(
+                  cells: [
+                    DataCell(Text(op['projectInfo']['pieceRef'] ?? '')),
+                    DataCell(Text(op['projectInfo']['pieceIndice'] ?? '')),
+                    DataCell(Text(op['operation'] ?? '')),
+                    DataCell(Text(op['displayOperation'] ?? '')),
+                    DataCell(Text(op['topSolideOperation'] ?? '')),
+                    DataCell(Text(op['arrosageType'] ?? '')),
+                    DataCell(
+                      Center(
+                        child: IconButton(
+                          icon: const Icon(Icons.folder_open),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () {
+                            _openProjectFolder(
+                                op['projectInfo']['projectPath']);
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+    );
+  }
+
+  /// Open the folder containing the project file
+  static void _openProjectFolder(String? projectFilePath) {
+    if (projectFilePath == null || projectFilePath.isEmpty) return;
+
+    try {
+      final dir = path.dirname(projectFilePath);
+      Process.run('explorer.exe', [dir]);
+    } catch (e) {
+      print('Error opening project folder: $e');
+    }
+  }
+
+  /// Directly search for matching operations in all project.json files
+  static Future<List<Map<String, dynamic>>> quickSearchOperations(
+      String operationTitle, String filePath) async {
+    try {
+      // Extract directory path from file path
+      List<String> pathParts = filePath.split('\\');
+      pathParts.removeLast(); // Remove the file name (last element)
+      pathParts.removeLast(); // Remove the file name (last element)
+      String baseSearchPath = pathParts.join('\\');
+      final results = <Map<String, dynamic>>[];
+      final directory = Directory(baseSearchPath);
+
+      // Find all project.json files
+      final projectFiles = <String>[];
+      await for (var entity in directory.list(recursive: true)) {
+        if (entity is File &&
+            path.basename(entity.path).toLowerCase() == 'project.json') {
+          projectFiles.add(entity.path);
+        }
+      }
+      // Process each project file
+      for (var projectFile in projectFiles) {
+        try {
+          final content = await File(projectFile).readAsString();
+          final projectData = jsonDecode(content) as Map<String, dynamic>;
+
+          // Check if the project has operations data
+          if (projectData.containsKey('operations') &&
+              projectData['operations'] is List) {
+            final operations =
+                List<Map<String, dynamic>>.from(projectData['operations']);
+
+            // Match operation data with operationTitle
+            for (var operation in operations) {
+              if (operation.containsKey('operation') &&
+                      operation['operation'].toString().toLowerCase().contains(
+                          "D301 EBAUCHE DRESSAGE FACE BROCHE PRINCIPALE"
+                              .toLowerCase())
+                  // operation['operation']
+                  //     .toString()
+                  //     .toLowerCase()
+                  //     .contains(operationTitle.toLowerCase())
+                  ) {
+                // Add project context to the operation data
+                final result = {
+                  ...operation,
+                  'projectInfo': {
+                    'pieceRef': projectData['pieceRef'] ?? '',
+                    'pieceIndice': projectData['pieceIndice'] ?? '',
+                    'pieceName': projectData['pieceName'] ?? '',
+                    'machine': projectData['machine'] ?? '',
+                    'projectPath': projectFile,
+                  }
+                };
+
+                results.add(result);
+              }
+            }
+          }
+        } catch (e) {
+          print("Error processing project file: $projectFile - $e");
+        }
+      }
+
+      return results;
+    } catch (e) {
+      print("Error searching for operations: $e");
+      return [];
+    }
+  }
+
+  // Helper method to build a table for project.json operations
+  Widget _buildProjectOperationsTable(
+      List<Map<String, dynamic>> operations, String title) {
+    return DataTable(
+      columns: const [
+        DataColumn(label: Text('Projet')),
+        DataColumn(label: Text('Titre')),
+        DataColumn(label: Text('Outil')),
+        DataColumn(label: Text('Chemin')),
+      ],
+      rows: operations.map((op) {
+        return DataRow(
+          cells: [
+            DataCell(Text(op['projectName'] ?? '')),
+            DataCell(Text(op['title'] ?? '')),
+            DataCell(Text(op['tool'] ?? '')),
+            DataCell(Text(op['projectPath'] ?? '')),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
+  /// Find specific file path in search results
+  static Map<String, List<String>>? findFilePathInResults(
+      Map<String, Map<String, List<String>>> results, String searchPath) {
+    // Exact match
+    if (results.containsKey(searchPath)) {
+      return results[searchPath];
+    }
+
+    // Case insensitive partial match
+    final lowerSearchPath = searchPath.toLowerCase();
+    for (var filePath in results.keys) {
+      if (filePath.toLowerCase().contains(lowerSearchPath)) {
+        return results[filePath];
+      }
+    }
+
+    return null;
+  }
+
+  /// Search for a specific file path and display its contents
+  static Future<void> searchAndDisplayFilePath(
+      BuildContext context, String folderPath, String specificFilePath) async {
+    showLoadingIndicator();
+
+    try {
+      print('Searching for file: $specificFilePath');
+      final file = File(specificFilePath);
+
+      if (await file.exists() && file.path.toLowerCase().endsWith('.arc')) {
+        print('File found, parsing: $specificFilePath');
+        final blocks = await parseArcFileBlocks(specificFilePath);
+
+        hideLoadingIndicator();
+
+        // Show the operations table directly
+        _showOperationsTable(context, blocks, specificFilePath);
+      } else {
+        // If exact file not found, try to find files with similar name
+        final pinceFiles = await findPinceFilenames(folderPath);
+        final fileName = path.basename(specificFilePath);
+
+        // Filter files that contain the specified filename
+        final matchingFiles = pinceFiles
+            .where((filePath) => path.basename(filePath).contains(fileName))
+            .toList();
+
+        if (matchingFiles.isNotEmpty) {
+          print('Found ${matchingFiles.length} similar files');
+          final blocks = await parseArcFileBlocks(matchingFiles[0]);
+
+          hideLoadingIndicator();
+          _showOperationsTable(context, blocks, matchingFiles[0]);
+        } else {
+          hideLoadingIndicator();
+          showErrorMessage('Fichier "$fileName" non trouvé');
+        }
+      }
+    } catch (e) {
+      hideLoadingIndicator();
+      print('Error during file search: $e');
+      showErrorMessage('Erreur lors de la recherche du fichier: $e');
+    }
+  }
+
+  /// Search all ARC files in a specific folder and display them
+  static Future<void> searchArcFilesInFolder(
+      BuildContext context, String folderPath) async {
+    showLoadingIndicator();
+
+    try {
+      print('Searching for ARC files in folder: $folderPath');
+      final directory = Directory(folderPath);
+
+      if (!await directory.exists()) {
+        hideLoadingIndicator();
+        showErrorMessage('Dossier introuvable: $folderPath');
+        return;
+      }
+
+      final arcFiles = await findArcFiles(folderPath);
+
+      hideLoadingIndicator();
+
+      if (arcFiles.isEmpty) {
+        showNoMatchesFoundMessage();
+        return;
+      }
+
+      // Show file selection dialog
+      _showFileSelectionDialog(context, arcFiles);
+    } catch (e) {
+      hideLoadingIndicator();
+      print('Error searching for ARC files: $e');
+      showErrorMessage('Erreur lors de la recherche: $e');
+    }
+  }
+
+  /// Show file selection dialog to choose which ARC file to view
+  static void _showFileSelectionDialog(
+      BuildContext context, List<String> arcFiles) {
+    Get.dialog(
+      Dialog(
+        child: Container(
+          width: Get.width * 0.7,
+          height: Get.height * 0.7,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Fichiers ARC trouvés',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.red),
+                    onPressed: () => Get.back(),
+                  ),
+                ],
+              ),
+              const Divider(),
+              Text(
+                '${arcFiles.length} fichiers trouvés',
+                style: const TextStyle(
+                  fontStyle: FontStyle.italic,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.search),
+                  hintText: 'Filtrer les fichiers...',
+                  border: OutlineInputBorder(),
+                  contentPadding:
+                      EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                ),
+                onChanged: (value) {
+                  // Could implement filtering functionality here
+                },
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: arcFiles.length,
+                  itemBuilder: (context, index) {
+                    final filePath = arcFiles[index];
+                    final fileName = path.basename(filePath);
+                    return Card(
+                      child: ListTile(
+                        leading:
+                            const Icon(Icons.description, color: Colors.blue),
+                        title: Text(fileName),
+                        subtitle: Text(
+                          filePath,
+                          style: const TextStyle(fontSize: 11),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        onTap: () async {
+                          Get.back(); // Close the dialog
+                          showLoadingIndicator();
+                          try {
+                            final blocks = await parseArcFileBlocks(filePath);
+                            hideLoadingIndicator();
+                            _showOperationsTable(context, blocks, filePath);
+                          } catch (e) {
+                            hideLoadingIndicator();
+                            showErrorMessage(
+                                'Erreur lors de l\'analyse du fichier: $e');
+                          }
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
