@@ -52,6 +52,9 @@ class CreateProjectController extends GetxController {
   final RxList<Map<String, dynamic>> selectedOperations =
       <Map<String, dynamic>>[].obs;
 
+  // Current operation index - moved from view
+  final RxInt currentOperationIndex = 0.obs;
+
   final Map<String, dynamic> _jsonCache = {};
 
   bool checkFilledFields(Map<String, TextEditingController> fields) {
@@ -422,6 +425,28 @@ class CreateProjectController extends GetxController {
     update();
   }
 
+  // A silent version that doesn't call update() - useful during initialization
+  void addOrUpdateOperationSilently(int index, String operation,
+      String displayOperation, String topSolideOperation, String arrosageType) {
+    while (selectedOperations.length <= index) {
+      selectedOperations.add({});
+    }
+
+    selectedOperations[index] = {
+      'operation': operation,
+      'displayOperation': displayOperation,
+      'topSolideOperation': topSolideOperation,
+      'arrosageType': arrosageType,
+    };
+
+    if (index == 0) {
+      this.operationName.text = operation;
+      this.displayOperation.text = displayOperation;
+      this.topSolideOperation.text = topSolideOperation;
+      this.arrosageType.text = arrosageType;
+    }
+  }
+
   bool areAllOperationsFilled() {
     if (selectedOperations.isEmpty) {
       return areSecandPartFieldsFilled();
@@ -753,11 +778,14 @@ class CreateProjectController extends GetxController {
   }
 
   // Add this method to jump to a specific operation index
-  void goToOperation(int index, RxInt currentOperationIndex) {
+  void goToOperation(int index) {
     // Check if index is valid
     if (index >= 0 && index < fileZJsonData.length) {
       // Update the current index
       currentOperationIndex.value = index;
+
+      // Call update to notify GetBuilder
+      update();
 
       // Show a message
       Get.snackbar(
@@ -772,11 +800,11 @@ class CreateProjectController extends GetxController {
   }
 
   // Add a method to find an operation by name and go to it
-  void findAndGoToOperation(String operationName, RxInt currentOperationIndex) {
+  void findAndGoToOperation(String operationName) {
     // Find the operation index by name
     for (int i = 0; i < fileZJsonData.length; i++) {
       if (fileZJsonData[i]["operation"] == operationName) {
-        goToOperation(i, currentOperationIndex);
+        goToOperation(i);
         return;
       }
     }
