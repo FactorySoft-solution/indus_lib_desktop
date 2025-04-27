@@ -736,7 +736,7 @@ class CreateProjectController extends GetxController {
 
   void saveProjectDataToJson(String filePath) {
     try {
-      final projectData = {
+      Map<String, dynamic> projectData = {
         'pieceRef': pieceRef.text,
         'pieceIndice': pieceIndice.text,
         'machine': machine.text,
@@ -766,6 +766,11 @@ class CreateProjectController extends GetxController {
         'planStatus': planStatus.value,
         'createdDate': DateTime.now().toIso8601String(),
       };
+
+      // Include all saved operations data in the project JSON
+      if (selectedOperations.isNotEmpty) {
+        projectData['operations'] = selectedOperations.toList();
+      }
 
       final jsonString = jsonEncode(projectData);
       final file = File(filePath);
