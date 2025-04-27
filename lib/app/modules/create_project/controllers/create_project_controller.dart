@@ -751,4 +751,43 @@ class CreateProjectController extends GetxController {
       logger.e("Error saving project data to JSON: $e");
     }
   }
+
+  // Add this method to jump to a specific operation index
+  void goToOperation(int index, RxInt currentOperationIndex) {
+    // Check if index is valid
+    if (index >= 0 && index < fileZJsonData.length) {
+      // Update the current index
+      currentOperationIndex.value = index;
+
+      // Show a message
+      Get.snackbar(
+        'Operation Changed',
+        'Switched to operation ${index + 1}',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.blue,
+        colorText: Colors.white,
+        duration: Duration(seconds: 1),
+      );
+    }
+  }
+
+  // Add a method to find an operation by name and go to it
+  void findAndGoToOperation(String operationName, RxInt currentOperationIndex) {
+    // Find the operation index by name
+    for (int i = 0; i < fileZJsonData.length; i++) {
+      if (fileZJsonData[i]["operation"] == operationName) {
+        goToOperation(i, currentOperationIndex);
+        return;
+      }
+    }
+
+    // Operation not found
+    Get.snackbar(
+      'Operation Not Found',
+      'Could not find operation: $operationName',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.red,
+      colorText: Colors.white,
+    );
+  }
 }

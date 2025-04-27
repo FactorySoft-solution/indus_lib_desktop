@@ -171,18 +171,111 @@ class ResumeProjectView extends GetView<CreateProjectController> {
                                 fontSize: 16,
                               ),
                             ),
+                            SizedBox(width: 10),
+                            // Add dropdown to quickly jump to operations
+                            DropdownButton<int>(
+                              hint: Text("Aller à..."),
+                              underline: Container(
+                                height: 1,
+                                color: Colors.blue,
+                              ),
+                              onChanged: (int? newIndex) {
+                                if (newIndex != null) {
+                                  controller.goToOperation(
+                                      newIndex, currentOperationIndex);
+                                }
+                              },
+                              items: List.generate(
+                                controller.fileZJsonData.length,
+                                (i) {
+                                  String opName = controller.fileZJsonData[i]
+                                          ["operation"] ??
+                                      "Operation ${i + 1}";
+                                  bool isConfigured = i <
+                                          controller
+                                              .selectedOperations.length &&
+                                      controller
+                                          .selectedOperations[i].isNotEmpty &&
+                                      controller.selectedOperations[i]
+                                              ['topSolideOperation'] !=
+                                          null &&
+                                      controller.selectedOperations[i]
+                                              ['arrosageType'] !=
+                                          null;
+
+                                  return DropdownMenuItem<int>(
+                                    value: i,
+                                    child: Row(
+                                      children: [
+                                        Text("${i + 1}. $opName"),
+                                        SizedBox(width: 5),
+                                        Icon(
+                                          isConfigured
+                                              ? Icons.check_circle
+                                              : Icons.circle_outlined,
+                                          color: isConfigured
+                                              ? Colors.green
+                                              : Colors.grey,
+                                          size: 16,
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 10),
 
-                        // Current operation info
-                        Text(
-                          'Opération: ${controller.fileZJsonData[index]["operation"]}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
+                        // Current operation info with status
+                        Obx(() {
+                          // Check if there's saved data for this operation
+                          String statusText = "";
+                          Color statusColor = Colors.grey;
+
+                          if (index < controller.selectedOperations.length) {
+                            Map<String, dynamic> opData =
+                                controller.selectedOperations[index];
+                            if (opData.isNotEmpty &&
+                                opData['topSolideOperation'] != null &&
+                                opData['topSolideOperation']
+                                    .toString()
+                                    .isNotEmpty &&
+                                opData['arrosageType'] != null &&
+                                opData['arrosageType'].toString().isNotEmpty) {
+                              statusText = " (Configurée)";
+                              statusColor = Colors.green;
+                            } else if (opData.isNotEmpty) {
+                              statusText = " (Partiellement configurée)";
+                              statusColor = Colors.orange;
+                            } else {
+                              statusText = " (Non configurée)";
+                              statusColor = Colors.red;
+                            }
+                          }
+
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Opération: ${controller.fileZJsonData[index]["operation"]}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              Text(
+                                statusText,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: statusColor,
+                                ),
+                              ),
+                            ],
+                          );
+                        }),
 
                         // Operation form
                         ProjectOperationForm(

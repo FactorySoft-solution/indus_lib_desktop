@@ -256,30 +256,55 @@ class _ProjectOperationFormState extends State<ProjectOperationForm> {
               height: widget.inputHeight,
             ),
             const SizedBox(width: 10),
-            JsonDropDown(
-              label: "Ajouter un type pour l'operation *",
-              hint:
-                  "Choisir une opération puis Sélectionner un type de la liste TopSolid",
-              controller: widget.operationIndex == 0
-                  ? widget.controller.topSolideOperation
-                  : localTopSolideOperation,
-              future: widget.controller.extractTopSolideOperationsJsonData(),
-              keyExtractor: (item) => item["name"],
-              width: widget.inputWidth - 10,
-              height: widget.inputHeight,
-              showReset: true,
-              fieldName: 'topSolideOperation',
-              onReset: () {
-                if (widget.operationIndex == 0) {
-                  widget.controller.handleReset('topSolideOperation');
-                } else {
-                  localTopSolideOperation.clear();
-                }
-                _saveOperationData();
-              },
-              onChanged: (value) {
-                _saveOperationData();
-              },
+            Stack(
+              children: [
+                JsonDropDown(
+                  label: "Ajouter un type pour l'operation *",
+                  hint:
+                      "Choisir une opération puis Sélectionner un type de la liste TopSolid",
+                  controller: widget.operationIndex == 0
+                      ? widget.controller.topSolideOperation
+                      : localTopSolideOperation,
+                  future:
+                      widget.controller.extractTopSolideOperationsJsonData(),
+                  keyExtractor: (item) => item["name"],
+                  width: widget.inputWidth - 10,
+                  height: widget.inputHeight,
+                  showReset: true,
+                  fieldName: 'topSolideOperation',
+                  onReset: () {
+                    if (widget.operationIndex == 0) {
+                      widget.controller.handleReset('topSolideOperation');
+                    } else {
+                      localTopSolideOperation.clear();
+                    }
+                    _saveOperationData();
+                  },
+                  onChanged: (value) {
+                    _saveOperationData();
+                  },
+                ),
+                // Add indicator of saved status
+                Positioned(
+                  right: 8,
+                  top: 10,
+                  child: Builder(builder: (context) {
+                    final controller = widget.operationIndex == 0
+                        ? widget.controller.topSolideOperation
+                        : localTopSolideOperation;
+
+                    return Icon(
+                      controller.text.isNotEmpty
+                          ? Icons.check_circle
+                          : Icons.pending,
+                      color: controller.text.isNotEmpty
+                          ? Colors.green
+                          : Colors.grey,
+                      size: 16,
+                    );
+                  }),
+                ),
+              ],
             ),
           ],
         ),
@@ -295,30 +320,54 @@ class _ProjectOperationFormState extends State<ProjectOperationForm> {
                   : localDisplayOperation,
             ),
             const SizedBox(width: 10),
-            JsonDropDown(
-              label: "Ajouter l\'arrosage *",
-              hint:
-                  "Choisir une opération puis Sélectionner un arrosage pour l\'outil",
-              controller: widget.operationIndex == 0
-                  ? widget.controller.arrosageType
-                  : localArrosageType,
-              future: widget.controller.extractArrosageTypesJsonData(),
-              keyExtractor: (item) => item["name"],
-              width: widget.inputWidth - 10,
-              height: widget.inputHeight,
-              showReset: true,
-              fieldName: 'arrosageType',
-              onReset: () {
-                if (widget.operationIndex == 0) {
-                  widget.controller.handleReset('arrosageType');
-                } else {
-                  localArrosageType.clear();
-                }
-                _saveOperationData();
-              },
-              onChanged: (value) {
-                _saveOperationData();
-              },
+            Stack(
+              children: [
+                JsonDropDown(
+                  label: "Ajouter l\'arrosage *",
+                  hint:
+                      "Choisir une opération puis Sélectionner un arrosage pour l\'outil",
+                  controller: widget.operationIndex == 0
+                      ? widget.controller.arrosageType
+                      : localArrosageType,
+                  future: widget.controller.extractArrosageTypesJsonData(),
+                  keyExtractor: (item) => item["name"],
+                  width: widget.inputWidth - 10,
+                  height: widget.inputHeight,
+                  showReset: true,
+                  fieldName: 'arrosageType',
+                  onReset: () {
+                    if (widget.operationIndex == 0) {
+                      widget.controller.handleReset('arrosageType');
+                    } else {
+                      localArrosageType.clear();
+                    }
+                    _saveOperationData();
+                  },
+                  onChanged: (value) {
+                    _saveOperationData();
+                  },
+                ),
+                // Add indicator of saved status
+                Positioned(
+                  right: 8,
+                  top: 10,
+                  child: Builder(builder: (context) {
+                    final controller = widget.operationIndex == 0
+                        ? widget.controller.arrosageType
+                        : localArrosageType;
+
+                    return Icon(
+                      controller.text.isNotEmpty
+                          ? Icons.check_circle
+                          : Icons.pending,
+                      color: controller.text.isNotEmpty
+                          ? Colors.green
+                          : Colors.grey,
+                      size: 16,
+                    );
+                  }),
+                ),
+              ],
             ),
           ],
         )
