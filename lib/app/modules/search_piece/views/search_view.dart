@@ -1,29 +1,27 @@
 import 'dart:io';
-import 'dart:convert';
-import 'package:excel/excel.dart' hide Border, Stack, Row, Column;
-import 'package:csv/csv.dart';
-import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
-import 'package:archive/archive.dart';
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:path/path.dart' as path;
-import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter/services.dart';
+
 import 'package:code_g/app/core/values/app_text_styles.dart';
 import 'package:code_g/app/widgets/CustomCard.dart';
 import 'package:code_g/app/widgets/button.dart';
 import 'package:code_g/app/widgets/checkbox_group_widget.dart';
 import 'package:code_g/app/widgets/jsonDropDown.dart';
 import 'package:code_g/app/widgets/text_input_widget.dart';
+import 'package:csv/csv.dart';
+import 'package:excel/excel.dart' hide Border, Stack, Row, Column;
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:path/path.dart' as path;
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:webview_windows/webview_windows.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../controllers/search_piece_controller.dart';
 import '../services/index.dart';
+import '../services/arc_file_finder.dart';
+import '../services/arc_file_parser.dart';
 import 'widgets/expandable_directory_tile.dart';
 
 class SearchView extends GetView<SearchPieceController> {
@@ -475,8 +473,9 @@ class SearchView extends GetView<SearchPieceController> {
                               if (folderPath.isNotEmpty) {
                                 try {
                                   PinceSearchService.showLoadingIndicator();
-                                  final pinceFiles = await PinceSearchService
-                                      .findPinceFilenames(folderPath);
+                                  final pinceFiles =
+                                      await ArcFileFinder.findPinceFilenames(
+                                          folderPath);
                                   PinceSearchService.hideLoadingIndicator();
 
                                   if (pinceFiles.isNotEmpty) {
@@ -667,23 +666,6 @@ class SearchView extends GetView<SearchPieceController> {
                 project['materiel'] ?? '', tableWidth * colWidths['matiere']!),
             _buildGridCell(project['pieceDiametre'] ?? '',
                 tableWidth * colWidths['diametre']!),
-            // _buildGridCell(
-            //   '',
-            //   tableWidth * colWidths['serrage']!,
-            //   customWidget: selectedItems.isNotEmpty
-            //       ? Column(
-            //           mainAxisAlignment: MainAxisAlignment.center,
-            //           crossAxisAlignment: CrossAxisAlignment.center,
-            //           children: selectedItems
-            //               .map((item) => Text(
-            //                     item,
-            //                     style: const TextStyle(fontSize: 11),
-            //                     textAlign: TextAlign.center,
-            //                   ))
-            //               .toList(),
-            //         )
-            //       : null,
-            // ),
             _buildGridCell(
               '',
               tableWidth * colWidths['forme']!,
@@ -1874,7 +1856,7 @@ class SearchView extends GetView<SearchPieceController> {
 
                         // Parse blocks first
                         final blocks =
-                            await PinceSearchService.parseArcFileBlocks(file);
+                            await ArcFileParser.parseArcFileBlocks(file);
 
                         // Show complete file content
                         PinceSearchService.showCompleteFileContent(
