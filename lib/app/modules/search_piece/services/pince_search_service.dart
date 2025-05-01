@@ -353,7 +353,10 @@ class PinceSearchService {
                     ],
                     rows: operations
                         .where((op) =>
-                            op['titreOP'] != null && op['titreOP']!.isNotEmpty)
+                            op['titreOP'] != null &&
+                            op['titreOP']!.isNotEmpty &&
+                            op['bpCb'] != null &&
+                            op['bpCb']!.isNotEmpty)
                         .map((op) {
                       final index = int.parse(op['numeroOP']!) - 1;
                       final blockKey = tBlocks[index];
@@ -391,7 +394,7 @@ class PinceSearchService {
                                         'Rechercher cette opération dans le project.json',
                                     onPressed: () {
                                       searchOperationInProjectJson(
-                                          op['titreOP']!, null);
+                                          op['titreOP']!, filePath);
                                     },
                                   ),
                                 if (op['matchingProjects'] != null)
@@ -1078,7 +1081,7 @@ class PinceSearchService {
       // Look for project.json file in the folder or parent folder
       final directory = Directory(projectPath);
       String? projectJsonPath;
-
+      print('projectPath $projectPath');
       // Check if the folder exists
       if (await directory.exists()) {
         // First check in current directory
@@ -1145,6 +1148,7 @@ class PinceSearchService {
   /// Open project.json file and search for matching operations
   static void searchOperationInProjectJson(
       String titreOp, String? projectPath) async {
+    print("titreOp: $titreOp");
     try {
       // Show a loading indicator
       Get.dialog(
@@ -1156,11 +1160,22 @@ class PinceSearchService {
 
       String userProfile = Platform.environment['USERPROFILE'] ??
           '\\home\\${Platform.environment['USER']}';
-      String searchPath = projectPath ?? "$userProfile\\Desktop\\aerobase";
+      String searchPath;
+      if (projectPath != null) {
+        var parts = projectPath.split(RegExp(r'[\\/]+'));
+        if (parts.length > 2) {
+          searchPath =
+              parts.sublist(0, parts.length - 2).join(Platform.pathSeparator);
+        } else {
+          searchPath = projectPath;
+        }
+      } else {
+        searchPath = "$userProfile\\Desktop\\aerobase";
+      }
 
       // Search for operations in project.json
       final operations = await findOperationsInProjectJson(titreOp, searchPath);
-
+      print("operations: $operations");
       // Close the loading indicator
       Get.back();
 

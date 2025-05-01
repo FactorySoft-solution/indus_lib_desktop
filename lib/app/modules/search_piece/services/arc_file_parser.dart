@@ -15,7 +15,19 @@ class ArcFileParser {
         final line = lines[i].trim();
         if (line.isEmpty) continue;
         final tMatches = tRegex.allMatches(line).toList();
+        bool validBlock = false;
         if (tMatches.isNotEmpty) {
+          // Check next line for MSG("/CY or MSG("/PU and D\d+
+          if (i + 1 < lines.length) {
+            final nextLine = lines[i + 1].trim();
+            if ((nextLine.contains('MSG("/CY') ||
+                    nextLine.contains('MSG("/PU')) &&
+                RegExp(r'D\d+').hasMatch(nextLine)) {
+              validBlock = true;
+            }
+          }
+        }
+        if (tMatches.isNotEmpty && validBlock) {
           if (currentTValue.isNotEmpty && currentBlockLines.isNotEmpty) {
             String blockKey = currentTValue;
             int suffix = 1;
@@ -73,17 +85,21 @@ class ArcFileParser {
       print("catch block 1 ...");
       try {
         print("try block 2 ...");
+        print("filePath $filePath");
+        bool isR200 = filePath.toUpperCase().contains("R200");
+        bool isG160 = filePath.toUpperCase().contains("G160");
         final bytes = await File(filePath).readAsBytes();
         final content = String.fromCharCodes(bytes);
         final blocks = <String, List<String>>{};
         final lines = content.split('\n');
-        final tRegex = RegExp(r'(^|\s)T\d+');
+        final tRegex = isG160 ? RegExp(r'(^|\s)T\d+') : RegExp(r'STEP_\d+');
         String currentTValue = '';
         List<String> currentBlockLines = [];
         for (var i = 0; i < lines.length; i++) {
           final line = lines[i].trim();
           if (line.isEmpty) continue;
           final tMatches = tRegex.allMatches(line).toList();
+
           if (tMatches.isNotEmpty) {
             if (currentTValue.isNotEmpty && currentBlockLines.isNotEmpty) {
               String blockKey = currentTValue;
