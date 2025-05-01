@@ -350,8 +350,12 @@ class ProjectService {
       if (filePath.isEmpty) return false;
 
       String fileName = path.basename(filePath);
-      return (fileName.toLowerCase().endsWith('.arc')) &&
-          !fileName.toLowerCase().contains('pince');
+      bool isPince = fileName.toLowerCase().contains('pince');
+      bool isArc = fileName.toLowerCase().endsWith('.arc');
+      bool isCb = fileName.toLowerCase().contains('cb');
+      bool isValid = isArc && (isCb || isPince);
+      logger.i("isValid: $isValid");
+      return isValid;
     } catch (e) {
       logger.e("Error validating FAO file: $e");
       return false;
@@ -363,8 +367,10 @@ class ProjectService {
       if (filePath.isEmpty) return false;
 
       String fileName = path.basename(filePath);
-      return fileName.toLowerCase().contains("ind") &&
-          fileName.toLowerCase().endsWith('.pdf');
+      bool isPDF = fileName.toLowerCase().endsWith('.pdf');
+      logger.i("fileName: $fileName");
+      bool isValid = fileName.toLowerCase().contains("ind") && isPDF;
+      return isValid;
     } catch (e) {
       logger.e("Error validating plan file: $e");
       return false;
@@ -376,8 +382,12 @@ class ProjectService {
       if (filePath.isEmpty) return false;
 
       String fileName = path.basename(filePath);
-      return fileName.toLowerCase().contains('fiche z') &&
-          fileName.toLowerCase().endsWith('.pdf');
+      bool isFicheZ = fileName.toLowerCase().contains('fiche z');
+      bool isR200 = fileName.toLowerCase().contains('r200');
+      bool isG160 = fileName.toLowerCase().contains('g160');
+      bool isPDF = fileName.toLowerCase().endsWith('.pdf');
+      bool isValid = (isFicheZ || isR200 || isG160) && isPDF;
+      return isValid;
     } catch (e) {
       logger.e("Error validating File Z: $e");
       return false;

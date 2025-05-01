@@ -52,7 +52,6 @@ class SearchView extends GetView<SearchPieceController> {
         _windowsWebViewInitialized = true;
       }
     } catch (e) {
-      print('Failed to initialize Windows WebView: $e');
       _windowsWebViewInitialized = false;
       Get.snackbar(
         'Erreur',
@@ -433,7 +432,11 @@ class SearchView extends GetView<SearchPieceController> {
                               // Try to open the folder
                               controller.openFolder(folderToOpen);
                             } else {
-                              print("No valid folder path found to open");
+                              Get.snackbar(
+                                'Erreur',
+                                'Aucun chemin de dossier valide trouvé',
+                                snackPosition: SnackPosition.BOTTOM,
+                              );
                             }
                           },
                         ),
@@ -460,7 +463,7 @@ class SearchView extends GetView<SearchPieceController> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 8),
                           ),
-                          child: const Text('Rechercher PINCES'),
+                          child: const Text('Recherche Liste Opérations'),
                         ),
                         const SizedBox(width: 8),
                         TextButton(
@@ -784,8 +787,6 @@ class SearchView extends GetView<SearchPieceController> {
                                 isDetailsView ? 'Vue dossiers' : 'Vue détails',
                             onPressed: () {
                               setState(() {
-                                print(
-                                    'Switching view from ${isDetailsView ? "details" : "folder"} to ${!isDetailsView ? "details" : "folder"}');
                                 isDetailsView = !isDetailsView;
                               });
                             },
@@ -983,39 +984,22 @@ class SearchView extends GetView<SearchPieceController> {
                                     ),
                                     onTap: () {
                                       final lowerExt = extension.toLowerCase();
-                                      print(
-                                          'File tapped: $fileName with extension: $lowerExt'); // Debug print
                                       if (['.jpg', '.jpeg', '.png']
                                           .contains(lowerExt)) {
-                                        print(
-                                            'Opening image preview'); // Debug print
                                         _showImagePreview(context, file.path);
                                       } else if (lowerExt == '.pdf') {
-                                        print(
-                                            'Opening PDF preview'); // Debug print
                                         _showPdfPreview(context, file.path);
                                       } else if (['.arc', '.cam']
                                           .contains(lowerExt)) {
-                                        print(
-                                            'Opening ARC file preview'); // Debug print
                                         _showArcFilePreview(context, file.path);
                                       } else if (['.csv'].contains(lowerExt)) {
-                                        print(
-                                            'Attempting to open CSV preview for: ${file.path}'); // Debug print
                                         _showCsvPreview(context, file.path);
                                       } else if (['.xlsx', '.xls']
                                           .contains(lowerExt)) {
-                                        print(
-                                            'Opening Excel preview'); // Debug print
                                         _showExcelPreview(context, file.path);
                                       } else if (['.docx'].contains(lowerExt)) {
-                                        print(
-                                            'Opening DOCX preview'); // Debug print
                                         _showDocxPreview(context, file.path);
-                                      } else {
-                                        print(
-                                            'No preview handler for extension: $lowerExt'); // Debug print
-                                      }
+                                      } else {}
                                     },
                                   );
                                 },
@@ -1281,7 +1265,6 @@ class SearchView extends GetView<SearchPieceController> {
                           enableDocumentLinkAnnotation: true,
                           onDocumentLoadFailed: (details) {
                             errorNotifier.value = details.error;
-                            print('PDF Error: ${details.error}');
                           },
                         );
                       },
@@ -1417,8 +1400,6 @@ class SearchView extends GetView<SearchPieceController> {
 
   // Add new methods for file previews
   void _showCsvPreview(BuildContext context, String filePath) {
-    print('Opening CSV file: $filePath'); // Debug print
-
     Get.dialog(
       Dialog(
         child: Container(
@@ -1447,8 +1428,6 @@ class SearchView extends GetView<SearchPieceController> {
                         tooltip: 'Ouvrir dans Excel',
                         onPressed: () async {
                           try {
-                            print(
-                                'Attempting to open CSV in system app'); // Debug print
                             final uri = Uri.file(filePath);
                             if (await canLaunchUrl(uri)) {
                               await launchUrl(uri);
@@ -1456,8 +1435,6 @@ class SearchView extends GetView<SearchPieceController> {
                               throw 'Impossible d\'ouvrir le fichier';
                             }
                           } catch (e) {
-                            print(
-                                'Error opening CSV in system app: $e'); // Debug print
                             Get.snackbar(
                               'Erreur',
                               'Impossible d\'ouvrir le fichier: $e',
@@ -1481,13 +1458,9 @@ class SearchView extends GetView<SearchPieceController> {
                 child: FutureBuilder<String>(
                   future: () async {
                     try {
-                      print('Reading CSV file content'); // Debug print
                       final content = await File(filePath).readAsString();
-                      print(
-                          'CSV content length: ${content.length}'); // Debug print
                       return content;
                     } catch (e) {
-                      print('Error reading CSV file: $e'); // Debug print
                       rethrow;
                     }
                   }(),
@@ -1496,8 +1469,6 @@ class SearchView extends GetView<SearchPieceController> {
                       return const Center(child: CircularProgressIndicator());
                     }
                     if (snapshot.hasError) {
-                      print(
-                          'Error in FutureBuilder: ${snapshot.error}'); // Debug print
                       return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -1539,17 +1510,14 @@ class SearchView extends GetView<SearchPieceController> {
                     }
 
                     try {
-                      print('Parsing CSV content'); // Debug print
                       final csvData = const CsvToListConverter(
                         shouldParseNumbers: true,
                         allowInvalid: true,
                         fieldDelimiter: ';', // Try semicolon as delimiter
                       ).convert(snapshot.data!);
 
-                      print('CSV rows: ${csvData.length}'); // Debug print
                       if (csvData.isEmpty) {
                         // Try with comma delimiter if no data found
-                        print('Retrying with comma delimiter'); // Debug print
                         final csvDataComma = const CsvToListConverter(
                           shouldParseNumbers: true,
                           allowInvalid: true,
@@ -1565,8 +1533,6 @@ class SearchView extends GetView<SearchPieceController> {
                         return const Center(child: Text('Fichier vide'));
                       }
 
-                      print(
-                          'First row columns: ${csvData[0].length}'); // Debug print
                       return SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: SingleChildScrollView(
@@ -1598,7 +1564,6 @@ class SearchView extends GetView<SearchPieceController> {
                         ),
                       );
                     } catch (e) {
-                      print('Error parsing CSV: $e'); // Debug print
                       return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -1859,7 +1824,6 @@ class SearchView extends GetView<SearchPieceController> {
         ),
       );
     } catch (e) {
-      print('Error showing DOCX preview: $e');
       Get.snackbar(
         'Erreur',
         'Impossible de charger le document: $e',
