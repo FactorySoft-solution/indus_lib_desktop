@@ -33,6 +33,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
+      key: GlobalKey(debugLabel: 'GetMaterialAppKey'),
       debugShowCheckedModeBanner: config.debugMode, // Enable/Disable debug mode
       initialRoute: AppPages.initial,
       getPages: AppPages.routes,

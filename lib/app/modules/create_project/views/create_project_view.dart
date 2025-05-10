@@ -31,6 +31,7 @@ class CreateProjectView extends GetView<CreateProjectController> {
           padding: const EdgeInsets.symmetric(vertical: 16.0),
           width: pageWidth * 0.8,
           height: pageHeight * 0.7,
+          enableScroll: true,
           children: [
             Padding(
               padding:

@@ -13,6 +13,8 @@ class CustomCard extends StatelessWidget {
   final List<BoxShadow>? boxShadow;
   final double? width;
   final double? height;
+  final bool enableScroll;
+
   const CustomCard({
     Key? key,
     this.width,
@@ -29,6 +31,7 @@ class CustomCard extends StatelessWidget {
     this.borderRadius =
         const BorderRadius.all(Radius.circular(12)), // Default border radius
     this.isDashedBorder = false,
+    this.enableScroll = true,
     this.boxShadow = const [
       BoxShadow(
         color: AppColors.shadowBlack20, // Shadow color with opacity (#00000033)
@@ -40,43 +43,59 @@ class CustomCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget cardContent = SingleChildScrollView(
-      child: Padding(
-        padding: padding!,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: children,
-        ),
+    // Create the content widget with padding
+    Widget contentWidget = Padding(
+      padding: padding!,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
       ),
     );
 
-    return Container(
-      height: height,
-      width: width,
-      margin: margin,
-      child: isDashedBorder
-          ? DottedBorder(
-              color: border.top.color,
-              borderType: BorderType.RRect,
-              radius: Radius.circular(borderRadius.topLeft.x),
-              dashPattern: [6, 3],
-              child: ClipRRect(
-                borderRadius: borderRadius,
-                child: Container(
-                  color: color,
-                  child: cardContent,
-                ),
-              ),
-            )
-          : Container(
-              decoration: BoxDecoration(
+    // Create the base container with styling
+    Widget baseContainer = isDashedBorder
+        ? DottedBorder(
+            color: border.top.color,
+            borderType: BorderType.RRect,
+            radius: Radius.circular(borderRadius.topLeft.x),
+            dashPattern: [6, 3],
+            child: ClipRRect(
+              borderRadius: borderRadius,
+              child: Container(
                 color: color,
-                border: border,
-                borderRadius: borderRadius,
-                boxShadow: boxShadow, // Apply the box shadow
+                child: contentWidget,
               ),
-              child: cardContent,
             ),
+          )
+        : Container(
+            decoration: BoxDecoration(
+              color: color,
+              border: border,
+              borderRadius: borderRadius,
+              boxShadow: boxShadow,
+            ),
+            child: ClipRRect(
+              borderRadius: borderRadius,
+              child: contentWidget,
+            ),
+          );
+
+    // Apply constraints
+    Widget constrainedContainer = Container(
+      margin: margin,
+      width: width,
+      height: enableScroll ? null : height,
+      child: baseContainer,
     );
+
+    // Return with or without scroll
+    return enableScroll
+        ? SingleChildScrollView(
+            key: ValueKey('customCardScroll${key?.toString() ?? ""}'),
+            child: constrainedContainer,
+          )
+        : constrainedContainer;
   }
 }

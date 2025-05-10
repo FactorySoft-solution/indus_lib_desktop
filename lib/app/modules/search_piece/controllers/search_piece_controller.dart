@@ -1,18 +1,22 @@
+import 'dart:io';
+
 import 'package:code_g/app/core/services/files_services.dart';
 import 'package:code_g/app/core/services/json_services.dart';
+import 'package:code_g/app/core/services/project_search_service.dart';
 import 'package:code_g/app/core/services/shared_service.dart';
-import 'package:get/get.dart';
+import 'package:code_g/app/core/services/file_explorer_service.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:logger/logger.dart';
-import 'dart:io';
-import 'dart:convert';
 import 'package:path/path.dart' as path;
 
 class SearchPieceController extends GetxController {
-  final Logger logger = new Logger();
+  final Logger logger = Logger();
   final SharedService sharedService = SharedService();
   final JsonServices jsonServices = JsonServices();
-  final FilesServices filesServices = new FilesServices();
+  final FilesServices filesServices = FilesServices();
+  final ProjectSearchService projectSearchService = ProjectSearchService();
+  final FileExplorerService fileExplorerService = FileExplorerService();
 
   // Search results
   final RxList<Map<String, dynamic>> searchResults =
@@ -73,6 +77,7 @@ class SearchPieceController extends GetxController {
     topSolideOperationController.dispose();
     materielController.dispose();
     specificationController.dispose();
+    selectedItemsController.dispose();
     super.onClose();
   }
 
@@ -194,90 +199,64 @@ class SearchPieceController extends GetxController {
 
   // Method to search for projects
   Future<void> searchProjects() async {
-    logger.i('Searching projects...');
+    logger.i('Starting project search...');
     try {
-      // Get the base directory path (Desktop/aerobase)
-      String userProfile = Platform.environment['USERPROFILE'] ??
-          '/home/${Platform.environment['USER']}';
-      String baseDir = "$userProfile/Desktop/aerobase";
+      // Get search terms from controllers
+      final searchTerms = <String, String>{};
 
-      if (!await Directory(baseDir).exists()) {
-        logger.e('Base directory does not exist: $baseDir');
-        return;
+      if (machine.value.isNotEmpty) {
+        searchTerms['machine'] = machine.value.toLowerCase();
+        logger.d('Added machine search term: ${machine.value}');
+      }
+      if (pieceDiametre.value.isNotEmpty) {
+        searchTerms['pieceDiametre'] = pieceDiametre.value.toLowerCase();
+        logger.d('Added pieceDiametre search term: ${pieceDiametre.value}');
+      }
+      if (form.value.isNotEmpty) {
+        searchTerms['form'] = form.value.toLowerCase();
+        logger.d('Added form search term: ${form.value}');
+      }
+      if (epaisseur.value.isNotEmpty) {
+        searchTerms['epaisseur'] = epaisseur.value.toLowerCase();
+        logger.d('Added epaisseur search term: ${epaisseur.value}');
+      }
+      if (operationName.value.isNotEmpty) {
+        searchTerms['operationName'] = operationName.value.toLowerCase();
+        logger.d('Added operationName search term: ${operationName.value}');
+      }
+      if (topSolideOperation.value.isNotEmpty) {
+        searchTerms['topSolideOperation'] =
+            topSolideOperation.value.toLowerCase();
+        logger.d(
+            'Added topSolideOperation search term: ${topSolideOperation.value}');
+      }
+      if (materiel.value.isNotEmpty) {
+        searchTerms['materiel'] = materiel.value.toLowerCase();
+        logger.d('Added materiel search term: ${materiel.value}');
+      }
+      if (specification.value.isNotEmpty) {
+        searchTerms['specification'] = specification.value.toLowerCase();
+        logger.d('Added specification search term: ${specification.value}');
+      }
+      if (selectedItems.isNotEmpty) {
+        searchTerms['selectedItems'] = selectedItems.join(',');
+        logger
+            .d('Added selectedItems search terms: ${selectedItems.join(', ')}');
       }
 
-      // Get all piece reference directories
-      final pieceRefDirs = await Directory(baseDir).list().toList();
-      List<Map<String, dynamic>> results = [];
+      logger.i('Search terms collected: $searchTerms');
 
-      for (var pieceRefDir in pieceRefDirs) {
-        if (pieceRefDir is Directory) {
-          // Get all piece index directories
-          final pieceIndexDirs = await pieceRefDir.list().toList();
+      // Use the project search service to search for projects
+      final results = await projectSearchService.searchProjects(searchTerms);
 
-          for (var pieceIndexDir in pieceIndexDirs) {
-            if (pieceIndexDir is Directory) {
-              try {
-                // Look for project.json file first
-                final projectJsonFile =
-                    File(path.join(pieceIndexDir.path, 'project.json'));
+      // Sort the results
+      final sortedResults = projectSearchService.sortResults(
+          results, sortField.value, sortAscending.value);
 
-                if (await projectJsonFile.exists()) {
-                  // Read project data from JSON file
-                  final String contents = await projectJsonFile.readAsString();
-                  final Map<String, dynamic> projectData = jsonDecode(contents);
-
-                  // Add directory paths to the project data
-                  projectData['projectPath'] = pieceIndexDir.path;
-                  projectData['copiedFolderPath'] =
-                      path.join(pieceIndexDir.path, 'copied_folder');
-
-                  // Check for Fiche Zoller files
-                  await enrichProjectDataWithFicheZoller(
-                      projectData, Directory(projectData['copiedFolderPath']));
-
-                  // Check if project matches search criteria
-                  if (matchesSearchCriteria(projectData)) {
-                    results.add(projectData);
-                  }
-                  continue; // Skip further processing for this directory
-                }
-
-                // If no project.json file, fallback to look for copied_folder
-                final copiedFolder =
-                    Directory(path.join(pieceIndexDir.path, 'copied_folder'));
-                if (await copiedFolder.exists()) {
-                  // Create base project data from directory structure
-                  final projectData = {
-                    'projectPath': pieceIndexDir.path,
-                    'pieceRef': path.basename(pieceRefDir.path),
-                    'pieceIndice': path.basename(pieceIndexDir.path),
-                    'copiedFolderPath': copiedFolder.path,
-                  };
-
-                  // Look for Fiche Zoller folder and files
-                  await enrichProjectDataWithFicheZoller(
-                      projectData, copiedFolder);
-
-                  // Check if project matches search criteria
-                  if (matchesSearchCriteria(projectData)) {
-                    results.add(projectData);
-                  }
-                }
-              } catch (e) {
-                logger
-                    .e('Error processing directory ${pieceIndexDir.path}: $e');
-                continue;
-              }
-            }
-          }
-        }
-      }
-
-      searchResults.value = results;
-      logger.i('Found ${results.length} matching projects');
+      searchResults.value = sortedResults;
+      logger.i('Search completed. Found ${results.length} matching projects');
     } catch (e) {
-      logger.e('Error searching projects: $e');
+      logger.e('Error during project search: $e');
       searchResults.clear();
     }
   }
@@ -367,23 +346,53 @@ class SearchPieceController extends GetxController {
         // If matched by Fiche Zoller, no need to check machine in project data
         searchTerms.remove('machine');
       }
-
       // Check remaining search terms against project data
       for (final entry in searchTerms.entries) {
         final field = entry.key;
         final searchValue = entry.value;
 
         // Check if field exists in project data
-        if (!projectData.containsKey(field) ||
-            projectData[field] == null ||
-            projectData[field].toString().isEmpty) {
+        if ((!projectData.containsKey(field) ||
+                projectData[field] == null ||
+                projectData[field].toString().isEmpty) &&
+            field != "topSolideOperation") {
           return false;
         }
 
-        // Check if field value contains search term
-        final fieldValue = projectData[field].toString().toLowerCase();
-        if (!fieldValue.contains(searchValue)) {
-          return false;
+        if (field == "topSolideOperation") {
+          // Check if operations array exists and contains the search term
+          if (!projectData.containsKey('operations') ||
+              projectData['operations'] == null ||
+              !(projectData['operations'] is List)) {
+            return false;
+          }
+
+          // Search through all operations for matching topSolideOperation
+          final operations = projectData['operations'] as List;
+          bool foundMatch = false;
+
+          for (var operation in operations) {
+            if (operation is Map &&
+                operation.containsKey('topSolideOperation') &&
+                operation['topSolideOperation'] != null) {
+              final operationValue =
+                  operation['topSolideOperation'].toString().toLowerCase();
+              if (operationValue.contains(searchValue)) {
+                foundMatch = true;
+                break;
+              }
+            }
+          }
+
+          if (!foundMatch) {
+            return false;
+          }
+        } else {
+          // Check if field value contains search term
+          final fieldValue = projectData[field].toString().toLowerCase();
+          if (!fieldValue.contains(searchValue)) {
+            return false;
+          }
         }
       }
 
@@ -452,13 +461,17 @@ class SearchPieceController extends GetxController {
 
   // Method to perform search with current field values
   Future<void> performSearch() async {
+    logger.i('Performing search with current field values');
     updateSearchFields();
     await searchProjects();
     sortResults(); // Apply sorting after search
+    logger.i('Search and sort completed');
   }
 
   // Method to sort search results
   void sortResults() {
+    logger.i(
+        'Sorting results by ${sortField.value} ${sortAscending.value ? 'ascending' : 'descending'}');
     final field = sortField.value;
     final ascending = sortAscending.value;
 
@@ -480,10 +493,12 @@ class SearchPieceController extends GetxController {
       final bValue = b[field].toString().toLowerCase();
       return ascending ? aValue.compareTo(bValue) : bValue.compareTo(aValue);
     });
+    logger.i('Sorting completed');
   }
 
   // Method to clear search results
   void clearSearch() {
+    logger.i('Clearing search results and fields');
     searchResults.clear();
     machine.value = '';
     pieceDiametre.value = '';
@@ -502,6 +517,7 @@ class SearchPieceController extends GetxController {
     topSolideOperationController.clear();
     materielController.clear();
     specificationController.clear();
+    logger.i('Search cleared successfully');
   }
 
   // Setup listeners for text controllers to update reactive fields
@@ -541,6 +557,7 @@ class SearchPieceController extends GetxController {
 
   // Handle reset for a specific field
   void handleReset(String fieldName) {
+    logger.i('Resetting field: $fieldName');
     switch (fieldName) {
       case 'machine':
         machineController.clear();
@@ -575,11 +592,13 @@ class SearchPieceController extends GetxController {
         specification.value = '';
         break;
       default:
+        logger.w('Unknown field name for reset: $fieldName');
         break;
     }
 
     // Auto-search if we have other fields with values
     if (hasActiveSearchFilters()) {
+      logger.i('Auto-searching after field reset');
       performSearch();
     }
   }
@@ -605,104 +624,6 @@ class SearchPieceController extends GetxController {
 
   // Method to open a folder in the file explorer
   Future<void> openFolder(String folderPath) async {
-    try {
-      logger.i('Opening folder: $folderPath');
-
-      // Clean up the path - replace forward slashes with backslashes on Windows
-      String cleanPath = folderPath;
-      if (Platform.isWindows) {
-        cleanPath = folderPath.replaceAll('/', '\\');
-        // Ensure path isn't quoted
-        cleanPath = cleanPath.replaceAll('"', '');
-      }
-
-      logger.i('Cleaned path: $cleanPath');
-
-      // Special handling for aerobase path
-      if (cleanPath.contains('aerobase')) {
-        final parts = cleanPath.split('aerobase');
-        if (parts.length > 1) {
-          // Add the pieceRef and pieceIndice to the path if it's not there
-          String afterAerobase = parts[1];
-          logger.i('After aerobase: $afterAerobase');
-
-          if (afterAerobase.isEmpty) {
-            // This is just the aerobase path with no specific project
-            logger.e(
-                'Cannot open just the aerobase folder, need a specific project path');
-            return;
-          }
-        }
-      }
-
-      // Check if the folder exists
-      final dir = Directory(cleanPath);
-      if (!dir.existsSync()) {
-        logger.e('Folder does not exist: $cleanPath');
-        // Try to infer the correct path if it contains aerobase
-        if (cleanPath.contains('aerobase')) {
-          // Get user desktop
-          String userProfile = Platform.environment['USERPROFILE'] ?? '';
-          if (userProfile.isNotEmpty) {
-            String desktopPath = "$userProfile\\Desktop";
-            // Extract project ref and indice from the path if possible
-            final regex = RegExp(r'(\w+)\\(\w+)');
-            final match = regex.firstMatch(cleanPath.split('aerobase').last);
-
-            if (match != null && match.groupCount >= 2) {
-              String pieceRef = match.group(1) ?? '';
-              String pieceIndice = match.group(2) ?? '';
-
-              if (pieceRef.isNotEmpty && pieceIndice.isNotEmpty) {
-                String newPath =
-                    "$desktopPath\\aerobase\\$pieceRef\\$pieceIndice";
-                logger.i('Trying alternative path: $newPath');
-
-                if (Directory(newPath).existsSync()) {
-                  cleanPath = newPath;
-                  logger.i('Alternative path exists, using: $cleanPath');
-                } else {
-                  logger.e('Alternative path does not exist: $newPath');
-                  return;
-                }
-              } else {
-                logger
-                    .e('Could not extract pieceRef and pieceIndice from path');
-                return;
-              }
-            } else {
-              logger.e('Could not match project information in path');
-              return;
-            }
-          } else {
-            logger.e('Could not determine user profile');
-            return;
-          }
-        } else {
-          return;
-        }
-      }
-
-      logger.i('Folder exists, attempting to open: $cleanPath');
-
-      if (Platform.isWindows) {
-        // On Windows, use explorer.exe
-        logger.i('Running: explorer.exe "$cleanPath"');
-        final result = await Process.run('explorer.exe', [cleanPath]);
-        logger.i('Process exit code: ${result.exitCode}');
-        logger.i('Process stdout: ${result.stdout}');
-        logger.i('Process stderr: ${result.stderr}');
-      } else if (Platform.isMacOS) {
-        // On macOS, use open
-        await Process.run('open', [cleanPath]);
-      } else if (Platform.isLinux) {
-        // On Linux, use xdg-open
-        await Process.run('xdg-open', [cleanPath]);
-      } else {
-        logger.e('Unsupported platform for opening folders');
-      }
-    } catch (e) {
-      logger.e('Error opening folder: $e');
-    }
+    await fileExplorerService.openFolder(folderPath);
   }
 }

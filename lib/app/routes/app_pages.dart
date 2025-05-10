@@ -24,41 +24,50 @@ class AppPages {
     GetPage(
       name: _Paths.SPLASH,
       page: () => const SplashScreen(),
+      transition: Transition.fadeIn,
+      transitionDuration: const Duration(milliseconds: 500),
     ),
     GetPage(
       name: _Paths.AUTH,
       page: () => const AuthPage(),
+      transition: Transition.fadeIn,
     ),
     GetPage(
       name: _Paths.HOME,
       page: () => HomeView(),
       binding: HomeBinding(),
+      transition: Transition.fadeIn,
     ),
     GetPage(
         name: _Paths.MAIN,
         page: () => MainView(),
         binding: HomeBinding(),
+        transition: Transition.fadeIn,
         children: [
           GetPage(
             name: _Paths.CREATEPROJECT,
             page: () => CreateProjectView(),
             binding: CreateProjectBinding(),
+            transition: Transition.fadeIn,
           ),
           GetPage(
             name: _Paths.SEARCHPIECE,
             page: () => SearchView(),
             binding: SearchPieceBinding(),
+            transition: Transition.fadeIn,
           ),
           GetPage(
             name: _Paths.ROBERTMETHOD,
             page: () => const RobertMethodView(),
             binding: RobertMethodBinding(),
+            transition: Transition.fadeIn,
           ),
         ]),
     GetPage(
       name: _Paths.LOGIN,
       page: () => AuthView(),
       binding: AuthBinding(),
+      transition: Transition.fadeIn,
     ),
   ];
 }

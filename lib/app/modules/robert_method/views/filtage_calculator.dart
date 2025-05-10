@@ -50,29 +50,35 @@ class FiltageCalculatorView extends GetView<RobertMethodController> {
                   children: [
                     const Text('Désignation du Filetage'),
                     const SizedBox(height: 5),
-                    Obx(() => SizedBox(
-                          width: MediaQuery.of(context).size.width * 0.4,
-                          child: CustomDropdown(
-                            label: '',
-                            hint: 'Choisir la désignation du filetage',
-                            items: controller.threadDesignations,
-                            controller: controller.threadDesignationController,
-                            height: 40.0,
-                            onChanged: (value) =>
-                                controller.updateThreadDesignation(value),
-                          ),
-                        )),
+                    Obx(
+                      key: UniqueKey(),
+                      () => SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.4,
+                        child: CustomDropdown(
+                          label: '',
+                          hint: 'Choisir la désignation du filetage',
+                          items: controller.threadDesignations,
+                          controller: controller.threadDesignationController,
+                          height: 40.0,
+                          onChanged: (value) =>
+                              controller.updateThreadDesignation(value),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ],
             ),
             const SizedBox(height: 20),
-            Obx(() => controller.hasResults.value
-                ? _buildResults()
-                : const Center(
-                    child: Text(
-                        'Sélectionnez un type et une désignation de filetage'),
-                  )),
+            Obx(
+              key: ValueKey('resultsObx'),
+              () => controller.hasResults.value
+                  ? _buildResults()
+                  : const Center(
+                      child: Text(
+                          'Sélectionnez un type et une désignation de filetage'),
+                    ),
+            ),
           ],
         ),
       ),
@@ -81,7 +87,9 @@ class FiltageCalculatorView extends GetView<RobertMethodController> {
 
   Widget _buildResults() {
     return CustomCard(
+      key: UniqueKey(),
       padding: const EdgeInsets.all(16.0),
+      enableScroll: false,
       children: [
         Text('Type: ${controller.selectedThreadType.value}'),
         const SizedBox(height: 10),

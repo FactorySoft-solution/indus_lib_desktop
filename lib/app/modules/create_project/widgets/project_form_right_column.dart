@@ -29,8 +29,22 @@ class ProjectFormRightColumn extends StatelessWidget {
       if (onNextStep != null) {
         onNextStep!();
       } else {
-        homeController.activePage.value =
-            "Ajouter une mouvelle pièce/resume-project";
+        // Show loading indicator or message
+        Get.dialog(
+          const Center(
+            child: CircularProgressIndicator(),
+          ),
+          barrierDismissible: false,
+        );
+
+        // Add a 1-second delay before navigating
+        Future.delayed(const Duration(seconds: 1), () {
+          // Close the loading dialog
+          Get.back();
+          // Navigate to resume project page
+          homeController.activePage.value =
+              "Ajouter une mouvelle pièce/resume-project";
+        });
       }
     }
     controller.update();

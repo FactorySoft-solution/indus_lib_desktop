@@ -49,6 +49,11 @@ class CreateProjectController extends GetxController {
   final RxString fileZStatus = "pending".obs;
   final RxList fileZJsonData = [].obs;
   final RxString planStatus = "pending".obs;
+  final RxList<Map<String, dynamic>> selectedOperations =
+      <Map<String, dynamic>>[].obs;
+
+  // Current operation index - moved from view
+  final RxInt currentOperationIndex = 0.obs;
 
   final Map<String, dynamic> _jsonCache = {};
 
@@ -210,8 +215,8 @@ class CreateProjectController extends GetxController {
         return _jsonCache[cacheKey];
       }
 
-      final List<dynamic> fetchedJsonData = await projectService
-          .extractMechoireJsonData();
+      final List<dynamic> fetchedJsonData =
+          await projectService.extractMechoireJsonData();
       var newData = fetchedJsonData;
 
       newData.sort((a, b) {
@@ -323,18 +328,140 @@ class CreateProjectController extends GetxController {
         return;
       }
 
+      // Fields are already cleared before this method is called
+
+      // First get description from fileZJsonData
       final data = fileZJsonData
           .where((element) => element["operation"] == operationToUse)
           .toList();
 
       if (data.isNotEmpty && data[0].containsKey("description")) {
         displayOperation.text = data[0]["description"];
+
+        // Check if this operation already has saved data in selectedOperations
+        int operationIndex = -1;
+        for (int i = 0; i < selectedOperations.length; i++) {
+          if (selectedOperations[i]['operation'] == operationToUse) {
+            operationIndex = i;
+            break;
+          }
+        }
+
+        // If we found saved data for this operation, load it
+        if (operationIndex >= 0) {
+          Map<String, dynamic> savedData = selectedOperations[operationIndex];
+          bool hasSavedFields = false;
+
+          // Only update the fields that should be loaded from saved data
+          // Keep the operation name as selected by user
+          displayOperation.text =
+              savedData['displayOperation'] ?? data[0]["description"];
+
+          // Only fill these if they exist in saved data
+          if (savedData['topSolideOperation'] != null &&
+              savedData['topSolideOperation'].toString().isNotEmpty) {
+            topSolideOperation.text = savedData['topSolideOperation'];
+            hasSavedFields = true;
+          }
+
+          if (savedData['arrosageType'] != null &&
+              savedData['arrosageType'].toString().isNotEmpty) {
+            arrosageType.text = savedData['arrosageType'];
+            hasSavedFields = true;
+          }
+
+          if (hasSavedFields) {
+            // Display a message that saved data was loaded if using Get
+            Get.snackbar(
+              'Saved Data Loaded',
+              'Previously saved data loaded for operation: $operationToUse',
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: Colors.green,
+              colorText: Colors.white,
+              duration: Duration(seconds: 2),
+            );
+          }
+
+          logger.i("Loaded saved data for operation: $operationToUse");
+        } else {
+          // No saved data found for this operation
+          Get.snackbar(
+            'New Operation',
+            'No saved data for this operation. Please fill in the details.',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.blue,
+            colorText: Colors.white,
+            duration: Duration(seconds: 2),
+          );
+        }
       } else {
         logger.i("No matching operation found or missing description");
       }
     } catch (e) {
       logger.e("Error updating display operation: $e");
     }
+  }
+
+  void addOrUpdateOperation(int index, String operation,
+      String displayOperation, String topSolideOperation, String arrosageType) {
+    while (selectedOperations.length <= index) {
+      selectedOperations.add({});
+    }
+
+    selectedOperations[index] = {
+      'operation': operation,
+      'displayOperation': displayOperation,
+      'topSolideOperation': topSolideOperation,
+      'arrosageType': arrosageType,
+    };
+
+    if (index == 0) {
+      this.operationName.text = operation;
+      this.displayOperation.text = displayOperation;
+      this.topSolideOperation.text = topSolideOperation;
+      this.arrosageType.text = arrosageType;
+    }
+
+    update();
+  }
+
+  // A silent version that doesn't call update() - useful during initialization
+  void addOrUpdateOperationSilently(int index, String operation,
+      String displayOperation, String topSolideOperation, String arrosageType) {
+    while (selectedOperations.length <= index) {
+      selectedOperations.add({});
+    }
+
+    selectedOperations[index] = {
+      'operation': operation,
+      'displayOperation': displayOperation,
+      'topSolideOperation': topSolideOperation,
+      'arrosageType': arrosageType,
+    };
+
+    if (index == 0) {
+      this.operationName.text = operation;
+      this.displayOperation.text = displayOperation;
+      this.topSolideOperation.text = topSolideOperation;
+      this.arrosageType.text = arrosageType;
+    }
+  }
+
+  bool areAllOperationsFilled() {
+    if (selectedOperations.isEmpty) {
+      return areSecandPartFieldsFilled();
+    }
+
+    for (var operation in selectedOperations) {
+      if (operation['operation']?.isEmpty ??
+          true || operation['topSolideOperation']?.isEmpty ??
+          true || operation['arrosageType']?.isEmpty ??
+          true) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   String _borderColor(TextEditingController controllerName) {
@@ -349,40 +476,32 @@ class CreateProjectController extends GetxController {
     return "pending";
   }
 
-  void selectFile(Map<String, List<String>>? selectedFile, TextEditingController controller) {
+  void selectFile(Map<String, List<String>>? selectedFile,
+      TextEditingController controller) {
     fileSelectionService.selectFile(selectedFile, controller);
     update();
   }
 
   void selectFao(Map<String, List<String>>? selectedFile) {
     fileSelectionService.selectFao(
-      selectedFile, 
-      faoFilePath, 
-      (status) => faoStatus.value = status
-    );
+        selectedFile, faoFilePath, (status) => faoStatus.value = status);
     update();
   }
 
   void selectPlan(Map<String, List<String>>? selectedFile) {
     fileSelectionService.selectPlan(
-      selectedFile, 
-      planFilePath, 
-      (status) => planStatus.value = status
-    );
+        selectedFile, planFilePath, (status) => planStatus.value = status);
     update();
   }
 
   void selectFileZ(Map<String, List<String>>? selectedFile) async {
     Map<String, dynamic> result = await fileSelectionService.selectFileZ(
-      selectedFile, 
-      fileZPath, 
-      (status) => fileZStatus.value = status
-    );
-    
+        selectedFile, fileZPath, (status) => fileZStatus.value = status);
+
     if (result.isNotEmpty) {
       processFileZResult(result);
     }
-    
+
     update();
   }
 
@@ -390,27 +509,27 @@ class CreateProjectController extends GetxController {
     if (structuredJson.containsKey("entries")) {
       fileZJsonData.value = List<dynamic>.from(structuredJson["entries"]);
     }
-    
+
     if (structuredJson.containsKey("fileName")) {
-      machine.text = structuredJson["fileName"].contains("R200") ? "R200" : "G160";
+      machine.text =
+          structuredJson["fileName"].contains("R200") ? "R200" : "G160";
     }
-    
+
     update();
   }
 
   void selectFilesFromFolder(Map<String, List<String>>? selectedFolderFiles) {
     fileSelectionService.selectFilesFromFolder(
-      selectedFolderFiles,
-      caoFilePath,
-      faoFilePath,
-      fileZPath,
-      planFilePath,
-      (status) => caoStatus.value = status,
-      (status) => faoStatus.value = status,
-      (status) => fileZStatus.value = status,
-      (status) => planStatus.value = status,
-      processFileZResult
-    );
+        selectedFolderFiles,
+        caoFilePath,
+        faoFilePath,
+        fileZPath,
+        planFilePath,
+        (status) => caoStatus.value = status,
+        (status) => faoStatus.value = status,
+        (status) => fileZStatus.value = status,
+        (status) => planStatus.value = status,
+        processFileZResult);
     update();
   }
 
@@ -419,9 +538,10 @@ class CreateProjectController extends GetxController {
       logger.w("No CAO file path selected");
       return;
     }
-    
+
     try {
-      Map<String, dynamic> projectData = formValidationService.prepareProjectData(
+      Map<String, dynamic> projectData =
+          formValidationService.prepareProjectData(
         pieceRef: pieceRef.text,
         pieceIndice: pieceIndice.text,
         machine: machine.text,
@@ -450,8 +570,13 @@ class CreateProjectController extends GetxController {
         faoStatus: faoStatus.value,
         planStatus: planStatus.value,
       );
-      
-      projectService.copyProjectFolder(
+
+      if (selectedOperations.isNotEmpty) {
+        projectData['operations'] = selectedOperations.toList();
+      }
+
+      projectService
+          .copyProjectFolder(
         sourceFolder: caoFilePath.text,
         pieceRef: pieceRef.text,
         pieceIndice: pieceIndice.text,
@@ -459,12 +584,12 @@ class CreateProjectController extends GetxController {
         formPath: form.text,
         faoFilePath: faoFilePath.text,
         projectData: projectData,
-      ).then((success) {
+      )
+          .then((success) {
         if (success) {
           resetAllControllers();
         }
       });
-      
     } catch (e) {
       logger.e("Error copying folder: $e");
     }
@@ -611,7 +736,7 @@ class CreateProjectController extends GetxController {
 
   void saveProjectDataToJson(String filePath) {
     try {
-      final projectData = {
+      Map<String, dynamic> projectData = {
         'pieceRef': pieceRef.text,
         'pieceIndice': pieceIndice.text,
         'machine': machine.text,
@@ -642,6 +767,11 @@ class CreateProjectController extends GetxController {
         'createdDate': DateTime.now().toIso8601String(),
       };
 
+      // Include all saved operations data in the project JSON
+      if (selectedOperations.isNotEmpty) {
+        projectData['operations'] = selectedOperations.toList();
+      }
+
       final jsonString = jsonEncode(projectData);
       final file = File(filePath);
       file.writeAsStringSync(jsonString);
@@ -650,5 +780,47 @@ class CreateProjectController extends GetxController {
     } catch (e) {
       logger.e("Error saving project data to JSON: $e");
     }
+  }
+
+  // Add this method to jump to a specific operation index
+  void goToOperation(int index) {
+    // Check if index is valid
+    if (index >= 0 && index < fileZJsonData.length) {
+      // Update the current index
+      currentOperationIndex.value = index;
+
+      // Call update to notify GetBuilder
+      update();
+
+      // Show a message
+      Get.snackbar(
+        'Operation Changed',
+        'Switched to operation ${index + 1}',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.blue,
+        colorText: Colors.white,
+        duration: Duration(seconds: 1),
+      );
+    }
+  }
+
+  // Add a method to find an operation by name and go to it
+  void findAndGoToOperation(String operationName) {
+    // Find the operation index by name
+    for (int i = 0; i < fileZJsonData.length; i++) {
+      if (fileZJsonData[i]["operation"] == operationName) {
+        goToOperation(i);
+        return;
+      }
+    }
+
+    // Operation not found
+    Get.snackbar(
+      'Operation Not Found',
+      'Could not find operation: $operationName',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.red,
+      colorText: Colors.white,
+    );
   }
 }
