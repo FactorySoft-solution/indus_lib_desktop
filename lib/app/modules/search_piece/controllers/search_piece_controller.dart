@@ -1,6 +1,7 @@
 import 'package:code_g/app/core/services/files_services.dart';
 import 'package:code_g/app/core/services/json_services.dart';
 import 'package:code_g/app/core/services/shared_service.dart';
+import 'package:code_g/app/core/services/project_search_service.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
@@ -13,6 +14,7 @@ class SearchPieceController extends GetxController {
   final SharedService sharedService = SharedService();
   final JsonServices jsonServices = JsonServices();
   final FilesServices filesServices = new FilesServices();
+  final ProjectSearchService projectSearchService = ProjectSearchService();
 
   // Search results
   final RxList<Map<String, dynamic>> searchResults =
@@ -194,87 +196,48 @@ class SearchPieceController extends GetxController {
 
   // Method to search for projects
   Future<void> searchProjects() async {
-    logger.i('Searching projects...');
+    logger.i('selectedItems : ${selectedItems}');
     try {
-      // Get the base directory path (Desktop/aerobase)
-      String userProfile = Platform.environment['USERPROFILE'] ??
-          '/home/${Platform.environment['USER']}';
-      String baseDir = "$userProfile/Desktop/aerobase";
+      // Get search terms from controllers
+      final searchTerms = <String, String>{};
 
-      if (!await Directory(baseDir).exists()) {
-        logger.e('Base directory does not exist: $baseDir');
-        return;
+      if (machine.value.isNotEmpty) {
+        searchTerms['machine'] = machine.value.toLowerCase();
+      }
+      if (pieceDiametre.value.isNotEmpty) {
+        searchTerms['pieceDiametre'] = pieceDiametre.value.toLowerCase();
+      }
+      if (form.value.isNotEmpty) {
+        searchTerms['form'] = form.value.toLowerCase();
+      }
+      if (epaisseur.value.isNotEmpty) {
+        searchTerms['epaisseur'] = epaisseur.value.toLowerCase();
+      }
+      if (operationName.value.isNotEmpty) {
+        searchTerms['operationName'] = operationName.value.toLowerCase();
+      }
+      if (topSolideOperation.value.isNotEmpty) {
+        searchTerms['topSolideOperation'] =
+            topSolideOperation.value.toLowerCase();
+      }
+      if (materiel.value.isNotEmpty) {
+        searchTerms['materiel'] = materiel.value.toLowerCase();
+      }
+      if (specification.value.isNotEmpty) {
+        searchTerms['specification'] = specification.value.toLowerCase();
+      }
+      if (selectedItems.isNotEmpty) {
+        searchTerms['selectedItems'] = selectedItems.join(',');
       }
 
-      // Get all piece reference directories
-      final pieceRefDirs = await Directory(baseDir).list().toList();
-      List<Map<String, dynamic>> results = [];
+      // Use the project search service to search for projects
+      final results = await projectSearchService.searchProjects(searchTerms);
 
-      for (var pieceRefDir in pieceRefDirs) {
-        if (pieceRefDir is Directory) {
-          // Get all piece index directories
-          final pieceIndexDirs = await pieceRefDir.list().toList();
+      // Sort the results
+      final sortedResults = projectSearchService.sortResults(
+          results, sortField.value, sortAscending.value);
 
-          for (var pieceIndexDir in pieceIndexDirs) {
-            if (pieceIndexDir is Directory) {
-              try {
-                // Look for project.json file first
-                final projectJsonFile =
-                    File(path.join(pieceIndexDir.path, 'project.json'));
-
-                if (await projectJsonFile.exists()) {
-                  // Read project data from JSON file
-                  final String contents = await projectJsonFile.readAsString();
-                  final Map<String, dynamic> projectData = jsonDecode(contents);
-
-                  // Add directory paths to the project data
-                  projectData['projectPath'] = pieceIndexDir.path;
-                  projectData['copiedFolderPath'] =
-                      path.join(pieceIndexDir.path, 'copied_folder');
-
-                  // Check for Fiche Zoller files
-                  await enrichProjectDataWithFicheZoller(
-                      projectData, Directory(projectData['copiedFolderPath']));
-
-                  // Check if project matches search criteria
-                  if (matchesSearchCriteria(projectData)) {
-                    results.add(projectData);
-                  }
-                  continue; // Skip further processing for this directory
-                }
-
-                // If no project.json file, fallback to look for copied_folder
-                final copiedFolder =
-                    Directory(path.join(pieceIndexDir.path, 'copied_folder'));
-                if (await copiedFolder.exists()) {
-                  // Create base project data from directory structure
-                  final projectData = {
-                    'projectPath': pieceIndexDir.path,
-                    'pieceRef': path.basename(pieceRefDir.path),
-                    'pieceIndice': path.basename(pieceIndexDir.path),
-                    'copiedFolderPath': copiedFolder.path,
-                  };
-
-                  // Look for Fiche Zoller folder and files
-                  await enrichProjectDataWithFicheZoller(
-                      projectData, copiedFolder);
-
-                  // Check if project matches search criteria
-                  if (matchesSearchCriteria(projectData)) {
-                    results.add(projectData);
-                  }
-                }
-              } catch (e) {
-                logger
-                    .e('Error processing directory ${pieceIndexDir.path}: $e');
-                continue;
-              }
-            }
-          }
-        }
-      }
-
-      searchResults.value = results;
+      searchResults.value = sortedResults;
       logger.i('Found ${results.length} matching projects');
     } catch (e) {
       logger.e('Error searching projects: $e');
@@ -367,23 +330,53 @@ class SearchPieceController extends GetxController {
         // If matched by Fiche Zoller, no need to check machine in project data
         searchTerms.remove('machine');
       }
-
       // Check remaining search terms against project data
       for (final entry in searchTerms.entries) {
         final field = entry.key;
         final searchValue = entry.value;
 
         // Check if field exists in project data
-        if (!projectData.containsKey(field) ||
-            projectData[field] == null ||
-            projectData[field].toString().isEmpty) {
+        if ((!projectData.containsKey(field) ||
+                projectData[field] == null ||
+                projectData[field].toString().isEmpty) &&
+            field != "topSolideOperation") {
           return false;
         }
 
-        // Check if field value contains search term
-        final fieldValue = projectData[field].toString().toLowerCase();
-        if (!fieldValue.contains(searchValue)) {
-          return false;
+        if (field == "topSolideOperation") {
+          // Check if operations array exists and contains the search term
+          if (!projectData.containsKey('operations') ||
+              projectData['operations'] == null ||
+              !(projectData['operations'] is List)) {
+            return false;
+          }
+
+          // Search through all operations for matching topSolideOperation
+          final operations = projectData['operations'] as List;
+          bool foundMatch = false;
+
+          for (var operation in operations) {
+            if (operation is Map &&
+                operation.containsKey('topSolideOperation') &&
+                operation['topSolideOperation'] != null) {
+              final operationValue =
+                  operation['topSolideOperation'].toString().toLowerCase();
+              if (operationValue.contains(searchValue)) {
+                foundMatch = true;
+                break;
+              }
+            }
+          }
+
+          if (!foundMatch) {
+            return false;
+          }
+        } else {
+          // Check if field value contains search term
+          final fieldValue = projectData[field].toString().toLowerCase();
+          if (!fieldValue.contains(searchValue)) {
+            return false;
+          }
         }
       }
 
