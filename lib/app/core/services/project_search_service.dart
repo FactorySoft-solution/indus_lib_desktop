@@ -2,63 +2,25 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:path/path.dart' as path;
 import 'package:logger/logger.dart';
+import 'project_data_service.dart';
 
 class ProjectSearchService {
   final Logger logger = Logger();
+  final ProjectDataService _projectDataService = ProjectDataService();
 
   // Method to search for projects based on search criteria
   Future<List<Map<String, dynamic>>> searchProjects(
       Map<String, String> searchTerms) async {
     logger.i('Searching projects...');
     try {
-      // Get the base directory path (Desktop/aerobase)
-      String userProfile = Platform.environment['USERPROFILE'] ??
-          '/home/${Platform.environment['USER']}';
-      String baseDir = "$userProfile/Desktop/aerobase";
-
-      if (!await Directory(baseDir).exists()) {
-        logger.e('Base directory does not exist: $baseDir');
-        return [];
-      }
-
-      // Get all piece reference directories
-      final pieceRefDirs = await Directory(baseDir).list().toList();
+      // Get all projects
+      final allProjects = await _projectDataService.getAllProjects();
       List<Map<String, dynamic>> results = [];
 
-      for (var pieceRefDir in pieceRefDirs) {
-        if (pieceRefDir is Directory) {
-          // Get all piece index directories
-          final pieceIndexDirs = await pieceRefDir.list().toList();
-
-          for (var pieceIndexDir in pieceIndexDirs) {
-            if (pieceIndexDir is Directory) {
-              try {
-                // Look for project.json file
-                final projectJsonFile =
-                    File(path.join(pieceIndexDir.path, 'project.json'));
-
-                if (await projectJsonFile.exists()) {
-                  // Read project data from JSON file
-                  final String contents = await projectJsonFile.readAsString();
-                  final Map<String, dynamic> projectData = jsonDecode(contents);
-
-                  // Add directory paths to the project data
-                  projectData['projectPath'] = pieceIndexDir.path;
-                  projectData['copiedFolderPath'] =
-                      path.join(pieceIndexDir.path, 'copied_folder');
-
-                  // Check if project matches search criteria
-                  if (matchesSearchCriteria(projectData, searchTerms)) {
-                    results.add(projectData);
-                  }
-                }
-              } catch (e) {
-                logger
-                    .e('Error processing directory ${pieceIndexDir.path}: $e');
-                continue;
-              }
-            }
-          }
+      // Filter projects based on search criteria
+      for (var projectData in allProjects) {
+        if (matchesSearchCriteria(projectData, searchTerms)) {
+          results.add(projectData);
         }
       }
 
@@ -103,51 +65,11 @@ class ProjectSearchService {
         }
 
         if (field == "selectedItems") {
-          // Check if project has selectedItems field
-          if (!projectData.containsKey('selectedItems') ||
-              projectData['selectedItems'] == null ||
-              projectData['selectedItems'].toString().isEmpty) {
-            logger.d('Project has no selectedItems field');
+          if (!_matchesSelectedItems(projectData, searchValue)) {
+            logger.d('No match found for selectedItems: $searchValue');
             return false;
           }
-
-          // Convert both arrays to lowercase for case-insensitive comparison
-          final projectSelectedItems = projectData['selectedItems']
-              .toString()
-              .toLowerCase()
-              .split(',')
-              .map((item) => item.trim())
-              .where((item) => item.isNotEmpty)
-              .toList();
-
-          final searchSelectedItems = searchTerms['selectedItems']
-                  ?.toLowerCase()
-                  .split(',')
-                  .map((item) => item.trim())
-                  .where((item) => item.isNotEmpty)
-                  .toList() ??
-              [];
-
-          logger.d('Project selected items: $projectSelectedItems');
-          logger.d('Search selected items: $searchSelectedItems');
-
-          // Check if at least one search item exists in project items
-          bool hasMatch = false;
-          for (var searchItem in searchSelectedItems) {
-            if (projectSelectedItems.any((projectItem) =>
-                projectItem.contains(searchItem) ||
-                searchItem.contains(projectItem))) {
-              hasMatch = true;
-              logger.d('Found match for selected item: $searchItem');
-              break;
-            }
-          }
-
-          if (!hasMatch) {
-            logger.d('No matches found for selected items');
-            return false;
-          }
-          logger.d('Selected items match found');
+          logger.d('Found match for selectedItems: $searchValue');
           continue;
         }
 
@@ -211,9 +133,55 @@ class ProjectSearchService {
     return false;
   }
 
+  // Helper method to check selected items
+  bool _matchesSelectedItems(
+      Map<String, dynamic> projectData, String searchValue) {
+    // Check if project has selectedItems field
+    if (!projectData.containsKey('selectedItems') ||
+        projectData['selectedItems'] == null ||
+        projectData['selectedItems'].toString().isEmpty) {
+      logger.d('Project has no selectedItems field');
+      return false;
+    }
+
+    // Convert both arrays to lowercase for case-insensitive comparison
+    final projectSelectedItems = projectData['selectedItems']
+        .toString()
+        .toLowerCase()
+        .split(',')
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList();
+
+    final searchSelectedItems = searchValue
+        .split(',')
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList();
+
+    logger.d('Project selected items: $projectSelectedItems');
+    logger.d('Search selected items: $searchSelectedItems');
+
+    // Check if at least one search item exists in project items
+    for (var searchItem in searchSelectedItems) {
+      if (projectSelectedItems.any((projectItem) =>
+          projectItem.contains(searchItem) ||
+          searchItem.contains(projectItem))) {
+        logger.d('Found match for selected item: $searchItem');
+        return true;
+      }
+    }
+
+    logger.d('No matches found for selected items');
+    return false;
+  }
+
   // Method to sort search results
   List<Map<String, dynamic>> sortResults(
       List<Map<String, dynamic>> results, String sortField, bool ascending) {
+    logger.d(
+        'Sorting results by $sortField ${ascending ? 'ascending' : 'descending'}');
+
     results.sort((a, b) {
       // Handle null values by putting them last
       if (!a.containsKey(sortField) || a[sortField] == null)
@@ -234,6 +202,7 @@ class ProjectSearchService {
       return ascending ? aValue.compareTo(bValue) : bValue.compareTo(aValue);
     });
 
+    logger.d('Sorting completed');
     return results;
   }
 }

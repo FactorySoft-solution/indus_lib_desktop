@@ -4,17 +4,19 @@ import 'package:code_g/app/core/services/files_services.dart';
 import 'package:code_g/app/core/services/json_services.dart';
 import 'package:code_g/app/core/services/project_search_service.dart';
 import 'package:code_g/app/core/services/shared_service.dart';
+import 'package:code_g/app/core/services/file_explorer_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
 import 'package:path/path.dart' as path;
 
 class SearchPieceController extends GetxController {
-  final Logger logger = new Logger();
+  final Logger logger = Logger();
   final SharedService sharedService = SharedService();
   final JsonServices jsonServices = JsonServices();
-  final FilesServices filesServices = new FilesServices();
+  final FilesServices filesServices = FilesServices();
   final ProjectSearchService projectSearchService = ProjectSearchService();
+  final FileExplorerService fileExplorerService = FileExplorerService();
 
   // Search results
   final RxList<Map<String, dynamic>> searchResults =
@@ -75,6 +77,7 @@ class SearchPieceController extends GetxController {
     topSolideOperationController.dispose();
     materielController.dispose();
     specificationController.dispose();
+    selectedItemsController.dispose();
     super.onClose();
   }
 
@@ -196,6 +199,7 @@ class SearchPieceController extends GetxController {
 
   // Method to search for projects
   Future<void> searchProjects() async {
+    logger.i('Starting project search...');
     try {
       // Get search terms from controllers
       final searchTerms = <String, String>{};
@@ -620,97 +624,6 @@ class SearchPieceController extends GetxController {
 
   // Method to open a folder in the file explorer
   Future<void> openFolder(String folderPath) async {
-    try {
-      logger.i('Opening folder: $folderPath');
-
-      // Clean up the path - replace forward slashes with backslashes on Windows
-      String cleanPath = folderPath;
-      if (Platform.isWindows) {
-        cleanPath = folderPath.replaceAll('/', '\\');
-        // Ensure path isn't quoted
-        cleanPath = cleanPath.replaceAll('"', '');
-      }
-
-      logger.i('Cleaned path: $cleanPath');
-
-      // Special handling for aerobase path
-      if (cleanPath.contains('aerobase')) {
-        final parts = cleanPath.split('aerobase');
-        if (parts.length > 1) {
-          // Add the pieceRef and pieceIndice to the path if it's not there
-          String afterAerobase = parts[1];
-          logger.i('After aerobase: $afterAerobase');
-
-          if (afterAerobase.isEmpty) {
-            // This is just the aerobase path with no specific project
-            logger.e(
-                'Cannot open just the aerobase folder, need a specific project path');
-            return;
-          }
-        }
-      }
-
-      // Check if the folder exists
-      final dir = Directory(cleanPath);
-      if (!dir.existsSync()) {
-        logger.e('Folder does not exist: $cleanPath');
-        // Try to infer the correct path if it contains aerobase
-        if (cleanPath.contains('aerobase')) {
-          // Get user desktop
-          String userProfile = Platform.environment['USERPROFILE'] ?? '';
-          if (userProfile.isNotEmpty) {
-            String desktopPath = "$userProfile\\Desktop";
-            // Extract project ref and indice from the path if possible
-            final regex = RegExp(r'(\w+)\\(\w+)');
-            final match = regex.firstMatch(cleanPath.split('aerobase').last);
-
-            if (match != null && match.groupCount >= 2) {
-              String pieceRef = match.group(1) ?? '';
-              String pieceIndice = match.group(2) ?? '';
-
-              if (pieceRef.isNotEmpty && pieceIndice.isNotEmpty) {
-                String newPath =
-                    "$desktopPath\\aerobase\\$pieceRef\\$pieceIndice";
-
-                if (Directory(newPath).existsSync()) {
-                  cleanPath = newPath;
-                  logger.i('Alternative path exists, using: $cleanPath');
-                } else {
-                  logger.e('Alternative path does not exist: $newPath');
-                  return;
-                }
-              } else {
-                logger
-                    .e('Could not extract pieceRef and pieceIndice from path');
-                return;
-              }
-            } else {
-              logger.e('Could not match project information in path');
-              return;
-            }
-          } else {
-            logger.e('Could not determine user profile');
-            return;
-          }
-        } else {
-          return;
-        }
-      }
-
-      if (Platform.isWindows) {
-        // On Windows, use explorer.exe
-        final result = await Process.run('explorer.exe', [cleanPath]);
-      } else if (Platform.isMacOS) {
-        // On macOS, use open
-        await Process.run('open', [cleanPath]);
-      } else if (Platform.isLinux) {
-        // On Linux, use xdg-open
-        await Process.run('xdg-open', [cleanPath]);
-      } else {
-        logger.e('Unsupported platform for opening folders');
-      }
-    } catch (e) {
-      logger.e('Error opening folder: $e');
-    }
+    await fileExplorerService.openFolder(folderPath);
   }
 }
