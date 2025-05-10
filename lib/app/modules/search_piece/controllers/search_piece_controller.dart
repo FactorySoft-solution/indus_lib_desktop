@@ -1,12 +1,12 @@
+import 'dart:io';
+
 import 'package:code_g/app/core/services/files_services.dart';
 import 'package:code_g/app/core/services/json_services.dart';
-import 'package:code_g/app/core/services/shared_service.dart';
 import 'package:code_g/app/core/services/project_search_service.dart';
-import 'package:get/get.dart';
+import 'package:code_g/app/core/services/shared_service.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:logger/logger.dart';
-import 'dart:io';
-import 'dart:convert';
 import 'package:path/path.dart' as path;
 
 class SearchPieceController extends GetxController {
@@ -196,39 +196,51 @@ class SearchPieceController extends GetxController {
 
   // Method to search for projects
   Future<void> searchProjects() async {
-    logger.i('selectedItems : ${selectedItems}');
     try {
       // Get search terms from controllers
       final searchTerms = <String, String>{};
 
       if (machine.value.isNotEmpty) {
         searchTerms['machine'] = machine.value.toLowerCase();
+        logger.d('Added machine search term: ${machine.value}');
       }
       if (pieceDiametre.value.isNotEmpty) {
         searchTerms['pieceDiametre'] = pieceDiametre.value.toLowerCase();
+        logger.d('Added pieceDiametre search term: ${pieceDiametre.value}');
       }
       if (form.value.isNotEmpty) {
         searchTerms['form'] = form.value.toLowerCase();
+        logger.d('Added form search term: ${form.value}');
       }
       if (epaisseur.value.isNotEmpty) {
         searchTerms['epaisseur'] = epaisseur.value.toLowerCase();
+        logger.d('Added epaisseur search term: ${epaisseur.value}');
       }
       if (operationName.value.isNotEmpty) {
         searchTerms['operationName'] = operationName.value.toLowerCase();
+        logger.d('Added operationName search term: ${operationName.value}');
       }
       if (topSolideOperation.value.isNotEmpty) {
         searchTerms['topSolideOperation'] =
             topSolideOperation.value.toLowerCase();
+        logger.d(
+            'Added topSolideOperation search term: ${topSolideOperation.value}');
       }
       if (materiel.value.isNotEmpty) {
         searchTerms['materiel'] = materiel.value.toLowerCase();
+        logger.d('Added materiel search term: ${materiel.value}');
       }
       if (specification.value.isNotEmpty) {
         searchTerms['specification'] = specification.value.toLowerCase();
+        logger.d('Added specification search term: ${specification.value}');
       }
       if (selectedItems.isNotEmpty) {
         searchTerms['selectedItems'] = selectedItems.join(',');
+        logger
+            .d('Added selectedItems search terms: ${selectedItems.join(', ')}');
       }
+
+      logger.i('Search terms collected: $searchTerms');
 
       // Use the project search service to search for projects
       final results = await projectSearchService.searchProjects(searchTerms);
@@ -238,9 +250,9 @@ class SearchPieceController extends GetxController {
           results, sortField.value, sortAscending.value);
 
       searchResults.value = sortedResults;
-      logger.i('Found ${results.length} matching projects');
+      logger.i('Search completed. Found ${results.length} matching projects');
     } catch (e) {
-      logger.e('Error searching projects: $e');
+      logger.e('Error during project search: $e');
       searchResults.clear();
     }
   }
@@ -445,13 +457,17 @@ class SearchPieceController extends GetxController {
 
   // Method to perform search with current field values
   Future<void> performSearch() async {
+    logger.i('Performing search with current field values');
     updateSearchFields();
     await searchProjects();
     sortResults(); // Apply sorting after search
+    logger.i('Search and sort completed');
   }
 
   // Method to sort search results
   void sortResults() {
+    logger.i(
+        'Sorting results by ${sortField.value} ${sortAscending.value ? 'ascending' : 'descending'}');
     final field = sortField.value;
     final ascending = sortAscending.value;
 
@@ -473,10 +489,12 @@ class SearchPieceController extends GetxController {
       final bValue = b[field].toString().toLowerCase();
       return ascending ? aValue.compareTo(bValue) : bValue.compareTo(aValue);
     });
+    logger.i('Sorting completed');
   }
 
   // Method to clear search results
   void clearSearch() {
+    logger.i('Clearing search results and fields');
     searchResults.clear();
     machine.value = '';
     pieceDiametre.value = '';
@@ -495,6 +513,7 @@ class SearchPieceController extends GetxController {
     topSolideOperationController.clear();
     materielController.clear();
     specificationController.clear();
+    logger.i('Search cleared successfully');
   }
 
   // Setup listeners for text controllers to update reactive fields
@@ -534,6 +553,7 @@ class SearchPieceController extends GetxController {
 
   // Handle reset for a specific field
   void handleReset(String fieldName) {
+    logger.i('Resetting field: $fieldName');
     switch (fieldName) {
       case 'machine':
         machineController.clear();
@@ -568,11 +588,13 @@ class SearchPieceController extends GetxController {
         specification.value = '';
         break;
       default:
+        logger.w('Unknown field name for reset: $fieldName');
         break;
     }
 
     // Auto-search if we have other fields with values
     if (hasActiveSearchFilters()) {
+      logger.i('Auto-searching after field reset');
       performSearch();
     }
   }
@@ -649,7 +671,6 @@ class SearchPieceController extends GetxController {
               if (pieceRef.isNotEmpty && pieceIndice.isNotEmpty) {
                 String newPath =
                     "$desktopPath\\aerobase\\$pieceRef\\$pieceIndice";
-                logger.i('Trying alternative path: $newPath');
 
                 if (Directory(newPath).existsSync()) {
                   cleanPath = newPath;
@@ -676,15 +697,9 @@ class SearchPieceController extends GetxController {
         }
       }
 
-      logger.i('Folder exists, attempting to open: $cleanPath');
-
       if (Platform.isWindows) {
         // On Windows, use explorer.exe
-        logger.i('Running: explorer.exe "$cleanPath"');
         final result = await Process.run('explorer.exe', [cleanPath]);
-        logger.i('Process exit code: ${result.exitCode}');
-        logger.i('Process stdout: ${result.stdout}');
-        logger.i('Process stderr: ${result.stderr}');
       } else if (Platform.isMacOS) {
         // On macOS, use open
         await Process.run('open', [cleanPath]);

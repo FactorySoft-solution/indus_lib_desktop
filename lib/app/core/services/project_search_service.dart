@@ -76,11 +76,13 @@ class ProjectSearchService {
     try {
       // Check if project data exists
       if (projectData.isEmpty) {
+        logger.d('Project data is empty');
         return false;
       }
 
       // If no search terms, return all projects
       if (searchTerms.isEmpty) {
+        logger.d('No search terms provided, returning all projects');
         return true;
       }
 
@@ -88,19 +90,24 @@ class ProjectSearchService {
       for (final entry in searchTerms.entries) {
         final field = entry.key;
         final searchValue = entry.value.toLowerCase();
+        logger.d('Checking field: $field with value: $searchValue');
 
         // Special handling for topSolideOperation
         if (field == "topSolideOperation") {
           if (!_matchesTopSolideOperation(projectData, searchValue)) {
+            logger.d('No match found for topSolideOperation: $searchValue');
             return false;
           }
+          logger.d('Found match for topSolideOperation: $searchValue');
           continue;
         }
+
         if (field == "selectedItems") {
           // Check if project has selectedItems field
           if (!projectData.containsKey('selectedItems') ||
               projectData['selectedItems'] == null ||
               projectData['selectedItems'].toString().isEmpty) {
+            logger.d('Project has no selectedItems field');
             return false;
           }
 
@@ -121,21 +128,26 @@ class ProjectSearchService {
                   .toList() ??
               [];
 
+          logger.d('Project selected items: $projectSelectedItems');
+          logger.d('Search selected items: $searchSelectedItems');
+
           // Check if at least one search item exists in project items
           bool hasMatch = false;
           for (var searchItem in searchSelectedItems) {
-            print("searching for  = $searchItem");
             if (projectSelectedItems.any((projectItem) =>
                 projectItem.contains(searchItem) ||
                 searchItem.contains(projectItem))) {
               hasMatch = true;
+              logger.d('Found match for selected item: $searchItem');
               break;
             }
           }
 
           if (!hasMatch) {
+            logger.d('No matches found for selected items');
             return false;
           }
+          logger.d('Selected items match found');
           continue;
         }
 
@@ -143,16 +155,20 @@ class ProjectSearchService {
         if (!projectData.containsKey(field) ||
             projectData[field] == null ||
             projectData[field].toString().isEmpty) {
+          logger.d('Field $field not found in project data');
           return false;
         }
 
         // Check if field value contains search term
         final fieldValue = projectData[field].toString().toLowerCase();
         if (!fieldValue.contains(searchValue)) {
+          logger.d('No match found for field $field: $searchValue');
           return false;
         }
+        logger.d('Match found for field $field: $searchValue');
       }
 
+      logger.d('All search criteria matched');
       return true;
     } catch (e) {
       logger.e('Error matching search criteria: $e');
@@ -163,15 +179,19 @@ class ProjectSearchService {
   // Helper method to check topSolideOperation in operations array
   bool _matchesTopSolideOperation(
       Map<String, dynamic> projectData, String searchValue) {
+    logger.d('Checking topSolideOperation for value: $searchValue');
+
     // Check if operations array exists
     if (!projectData.containsKey('operations') ||
         projectData['operations'] == null ||
         !(projectData['operations'] is List)) {
+      logger.d('No operations array found in project data');
       return false;
     }
 
     // Search through all operations for matching topSolideOperation
     final operations = projectData['operations'] as List;
+    logger.d('Found ${operations.length} operations to check');
 
     for (var operation in operations) {
       if (operation is Map &&
@@ -179,12 +199,15 @@ class ProjectSearchService {
           operation['topSolideOperation'] != null) {
         final operationValue =
             operation['topSolideOperation'].toString().toLowerCase();
+        logger.d('Checking operation value: $operationValue');
         if (operationValue.contains(searchValue)) {
+          logger.d('Found matching topSolideOperation: $operationValue');
           return true;
         }
       }
     }
 
+    logger.d('No matching topSolideOperation found');
     return false;
   }
 
