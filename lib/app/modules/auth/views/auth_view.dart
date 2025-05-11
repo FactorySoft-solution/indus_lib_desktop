@@ -143,7 +143,11 @@ class AuthView extends GetView<AuthController> {
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
-                              onPressed: () {},
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: const Size(60, 36),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
                               child: const Text(
                                 'Mot de passe oublié',
                                 style: TextStyle(
@@ -151,11 +155,7 @@ class AuthView extends GetView<AuthController> {
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: const Size(60, 36),
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
+                              onPressed: () {},
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -163,17 +163,17 @@ class AuthView extends GetView<AuthController> {
                           Center(
                             child: TextButton(
                               onPressed: () {},
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: const Size(60, 36),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
                               child: const Text(
                                 "Qu'est-ce qu'AeroBase STTR ?",
                                 style: TextStyle(
                                   color: Colors.black54,
                                   fontWeight: FontWeight.w400,
                                 ),
-                              ),
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: const Size(60, 36),
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
                             ),
                           ),
