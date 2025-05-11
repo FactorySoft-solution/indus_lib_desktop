@@ -18,11 +18,7 @@ class _AuthPageState extends State<AuthPage> {
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(seconds: 5), () {
-      // Get.to(HomeView());
-      // print(Routes.HOME);
-      // Get.offAllNamed(Routes.CREATEPROJECT);
-    });
+    Timer(const Duration(seconds: 5), () {});
   }
 
   @override

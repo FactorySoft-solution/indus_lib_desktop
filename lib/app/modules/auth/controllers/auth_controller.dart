@@ -6,9 +6,11 @@ import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthController extends GetxController {
-  //TODO: Implement AuthController
+  final formKey = GlobalKey<FormState>();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  final isLoading = false.obs;
+  final obscurePassword = true.obs;
 
   final count = 0.obs;
   @override
@@ -23,7 +25,29 @@ class AuthController extends GetxController {
 
   @override
   void onClose() {
+    emailController.dispose();
+    passwordController.dispose();
     super.onClose();
+  }
+
+  String? validateEmail(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Email is required';
+    }
+    if (!GetUtils.isEmail(value)) {
+      return 'Please enter a valid email';
+    }
+    return null;
+  }
+
+  String? validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Password is required';
+    }
+    if (value.length < 6) {
+      return 'Password must be at least 6 characters';
+    }
+    return null;
   }
 
   Future<Map<String, dynamic>?> getUserByUsername(String email) async {
@@ -75,23 +99,31 @@ class AuthController extends GetxController {
     return response;
   }
 
-  void login() {
-    // Add authentication logic here
-    if (emailController.text.isNotEmpty && passwordController.text.isNotEmpty) {
-      String email = emailController.text;
-      String password = passwordController.text;
-      print("password == $password");
-      final localStorage = new LocalStorageService();
-      final UserModel user = new UserModel(
-        login: email,
-        company: Company.ROBERT,
-        workstation: Workstation.REGLEUR_MACHINE,
-      );
-      localStorage.saveString("user_data", user.toString());
-      // getUserByUsername(email);
-      Get.offAllNamed('/home');
-    } else {
-      Get.snackbar('Error', 'Please enter email and password');
+  Future<void> login() async {
+    if (formKey.currentState?.validate() ?? false) {
+      try {
+        isLoading.value = true;
+        String email = emailController.text;
+        String password = passwordController.text;
+
+        final localStorage = LocalStorageService();
+        final UserModel user = UserModel(
+          login: email,
+          company: Company.ROBERT,
+          workstation: Workstation.REGLEUR_MACHINE,
+        );
+
+        await localStorage.saveString("user_data", user.toString());
+        Get.offAllNamed('/home');
+      } catch (e) {
+        Get.snackbar('Error', 'An error occurred during login');
+      } finally {
+        isLoading.value = false;
+      }
     }
+  }
+
+  void togglePasswordVisibility() {
+    obscurePassword.value = !obscurePassword.value;
   }
 }
